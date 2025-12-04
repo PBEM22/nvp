@@ -49,3 +49,5 @@ data.sql
 
 ### data files ###
 *.pdf
+*.xlsx
+*.csv

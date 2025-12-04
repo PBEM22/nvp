@@ -29,6 +29,9 @@ enum class ErrorCode(
     // Board
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "B001", "해당 게시글을 찾을 수 없습니다."),
 
+    // Comment
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CM01", "해당 댓글을 찾을 수 없습니다."),
+
     // JWT
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "J001", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "J002", "만료된 토큰입니다."),
