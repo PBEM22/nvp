@@ -40,7 +40,7 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) } // 세션 관리 STATELESS 설정
             .authorizeHttpRequests { authorize ->
                 authorize
-                    .requestMatchers("/", "/api/auth/**", "/error").permitAll() // 특정 경로는 인증 없이 허용
+                    .requestMatchers("/**", "/api/auth/**", "/error").permitAll() // 특정 경로는 인증 없이 허용
                     .anyRequest().authenticated() // 나머지 모든 경로는 인증 필요
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java) // 커스텀 필터 추가
