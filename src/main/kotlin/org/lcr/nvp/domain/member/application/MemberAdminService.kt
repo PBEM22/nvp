@@ -61,6 +61,7 @@ class MemberAdminService(
             name = member.user.name,
             birthday = member.birthday,
             isMale = member.isMale,
+            profileImageUrl = member.profileImageUrl,
             backNumber = member.backNumber,
             isPublic = member.isPublic,
             membershipStatus = member.membershipStatus,

@@ -22,6 +22,9 @@ class Member(
     @Column(name = "is_male", nullable = false)
     var isMale: Boolean,
 
+    @Column(name = "profile_image_url", length = 1000)
+    var profileImageUrl: String? = null,
+
     @Column(name = "back_number", nullable = true)
     var backNumber: Int? = null,
 
