@@ -17,7 +17,7 @@ class CustomUserDetailsService(
     override fun loadUserByUsername(username: String): UserDetails {
         // 여기서 username은 email을 의미
         val user = userRepository.findByEmail(username)
-            ?: throw UsernameNotFoundException("User not found with email: $username")
+            ?: throw UsernameNotFoundException("사용자를 찾을 수 없습니다. Email: $username")
 
         val authorities = user.roles.map { SimpleGrantedAuthority(it.roleName) }
 

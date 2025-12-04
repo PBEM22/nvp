@@ -1,6 +1,7 @@
 package org.lcr.nvp.config
 
 import org.lcr.nvp.config.jwt.JwtAuthenticationFilter
+import org.lcr.nvp.config.jwt.JwtExceptionFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
@@ -18,7 +19,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity // 메소드 수준의 보안 설정을 활성화
 class SecurityConfig(
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val jwtExceptionFilter: JwtExceptionFilter
 ) {
 
     @Bean
@@ -43,7 +45,8 @@ class SecurityConfig(
                     .requestMatchers("/**", "/api/auth/**", "/error").permitAll() // 특정 경로는 인증 없이 허용
                     .anyRequest().authenticated() // 나머지 모든 경로는 인증 필요
             }
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java) // 커스텀 필터 추가
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterBefore(jwtExceptionFilter, JwtAuthenticationFilter::class.java) // 예외 처리 필터를 인증 필터 앞에 추가
 
         return http.build()
     }

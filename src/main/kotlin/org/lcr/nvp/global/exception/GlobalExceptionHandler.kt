@@ -1,8 +1,11 @@
 package org.lcr.nvp.global.exception
 
+import io.jsonwebtoken.security.SignatureException
 import org.lcr.nvp.global.common.ApiResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AuthorizationServiceException
+import org.springframework.security.authorization.AuthorizationDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -18,10 +21,30 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     protected fun handleMethodArgumentNotValid(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Unit>> {
         log.warn("handleMethodArgumentNotValidException: {}", e.message)
-        // 어떤 필드에서 어떤 에러가 발생했는지 상세하게 로그를 남길 수 있습니다.
-        // e.bindingResult.fieldErrors.forEach { log.warn(it.toString()) }
         val errorCode = ErrorCode.INVALID_INPUT_VALUE
         val response = ApiResponse.onFailure(errorCode.code, e.bindingResult.fieldError?.defaultMessage ?: errorCode.message)
+        return ResponseEntity.status(errorCode.status).body(response)
+    }
+
+    /**
+     * JWT 서명 관련 예외를 처리합니다.
+     */
+    @ExceptionHandler(SignatureException::class)
+    protected fun handleSignatureException(e: SignatureException): ResponseEntity<ApiResponse<Unit>> {
+        log.warn("handleSignatureException: {}", e.message)
+        val errorCode = ErrorCode.INVALID_TOKEN
+        val response = ApiResponse.onFailure(errorCode.code, "JWT 서명이 유효하지 않습니다.")
+        return ResponseEntity.status(errorCode.status).body(response)
+    }
+
+    /**
+     * 권한 부족 예외를 처리합니다. (@PreAuthorize 등에서 발생)
+     */
+    @ExceptionHandler(AuthorizationDeniedException::class)
+    protected fun handleAuthorizationDeniedException(e: AuthorizationDeniedException): ResponseEntity<ApiResponse<Unit>> {
+        log.warn("handleAuthorizationDeniedException: {}", e.message)
+        val errorCode = ErrorCode.FORBIDDEN
+        val response = ApiResponse.onFailure(errorCode.code, errorCode.message)
         return ResponseEntity.status(errorCode.status).body(response)
     }
 
