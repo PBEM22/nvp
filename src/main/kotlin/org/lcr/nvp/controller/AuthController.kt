@@ -74,6 +74,22 @@ class AuthController(
         return ResponseEntity.ok(ApiResponse.onSuccess(accessTokenResponse))
     }
 
+    @Operation(summary = "로그아웃", description = "현재 사용자를 로그아웃 처리하고 토큰을 무효화합니다.")
+    @PostMapping("/logout")
+    fun logout(
+        @RequestHeader("Authorization") authorizationHeader: String,
+        response: HttpServletResponse
+    ): ResponseEntity<ApiResponse<Unit>> {
+        val accessToken = authorizationHeader.substring(7)
+        authService.logout(accessToken)
+
+        // 클라이언트의 리프레시 토큰 쿠키를 삭제
+        val expiredCookie = cookieUtil.createRefreshTokenCookie("", Duration.ZERO)
+        response.addHeader(HttpHeaders.SET_COOKIE, expiredCookie.toString())
+
+        return ResponseEntity.ok(ApiResponse.onSuccess())
+    }
+
     @Operation(summary = "인증 테스트", description = "발급받은 AccessToken이 유효한지 테스트하는 API입니다.")
     @GetMapping("/hello")
     fun hello(): ResponseEntity<ApiResponse<String>> {

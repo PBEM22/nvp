@@ -73,22 +73,8 @@ class JwtTokenProvider(
         return getClaims(token).subject
     }
 
-    fun validateToken(token: String): Boolean {
-        try {
-            getClaims(token)
-            return true
-        } catch (e: SecurityException) {
-            log.info("유효하지 않은 JWT 서명입니다.")
-        } catch (e: MalformedJwtException) {
-            log.info("유효하지 않은 JWT 토큰입니다.")
-        } catch (e: ExpiredJwtException) {
-            log.info("만료된 JWT 토큰입니다.")
-        } catch (e: UnsupportedJwtException) {
-            log.info("지원하지 않는 JWT 토큰입니다.")
-        } catch (e: IllegalArgumentException) {
-            log.info("JWT 클레임이 비어있습니다.")
-        }
-        return false
+    fun getExpiration(token: String): Date {
+        return getClaims(token).expiration
     }
 
     private fun getClaims(token: String): Claims {

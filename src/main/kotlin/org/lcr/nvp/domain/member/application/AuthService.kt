@@ -90,32 +90,28 @@ class AuthService(
 
     @Transactional
     fun reissueToken(refreshToken: String): TokenInfo {
-        // 1. Refresh Token 검증
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw BusinessException(ErrorCode.INVALID_REFRESH_TOKEN)
-        }
-
-        // 2. Refresh Token에서 사용자 이메일(subject) 가져오기
+        // Refresh Token에서 사용자 이메일(subject) 가져오기
+        // 이 과정에서 토큰이 유효하지 않으면 SignatureException, ExpiredJwtException 등이 발생
         val userEmail = jwtTokenProvider.getSubject(refreshToken)
 
-        // 3. Redis에 저장된 Refresh Token과 일치하는지 확인
+        // Redis에 저장된 Refresh Token과 일치하는지 확인
         val storedRefreshToken = redisTemplate.opsForValue().get(userEmail)
         if (storedRefreshToken == null || storedRefreshToken != refreshToken) {
             throw BusinessException(ErrorCode.INVALID_REFRESH_TOKEN)
         }
 
-        // 4. 새로운 토큰 생성을 위해 사용자 정보 다시 가져오기
+        // 새로운 토큰 생성을 위해 사용자 정보 다시 가져오기
         val user = userRepository.findByEmail(userEmail)
             ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
         val authentication = UsernamePasswordAuthenticationToken(
             user.email, null, user.roles.map { org.springframework.security.core.authority.SimpleGrantedAuthority(it.roleName) }
         )
 
-        // 5. 새로운 AccessToken과 RefreshToken 생성 (Refresh Token Rotation)
+        // 새로운 AccessToken과 RefreshToken 생성 (Refresh Token Rotation)
         val newAccessToken = jwtTokenProvider.generateAccessToken(authentication)
         val newRefreshToken = jwtTokenProvider.generateRefreshToken(authentication)
 
-        // 6. Redis에 새로운 RefreshToken 저장
+        // Redis에 새로운 RefreshToken 저장
         redisTemplate.opsForValue().set(
             userEmail,
             newRefreshToken,
@@ -127,5 +123,21 @@ class AuthService(
             accessToken = newAccessToken,
             refreshToken = newRefreshToken
         )
+    }
+
+    @Transactional
+    fun logout(accessToken: String) {
+        // Access Token에서 사용자 이메일(subject) 가져오기
+        // 이 과정에서 토큰이 유효하지 않으면 SignatureException, ExpiredJwtException 등이 발생
+        val userEmail = jwtTokenProvider.getSubject(accessToken)
+
+        // Redis에서 해당 사용자의 Refresh Token 삭제
+        if (redisTemplate.opsForValue().get(userEmail) != null) {
+            redisTemplate.delete(userEmail)
+        }
+
+        // Access Token을 블랙리스트에 추가
+        val expiration = jwtTokenProvider.getExpiration(accessToken).time - System.currentTimeMillis()
+        redisTemplate.opsForValue().set(accessToken, "logout", expiration, TimeUnit.MILLISECONDS)
     }
 }
