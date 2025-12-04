@@ -52,5 +52,7 @@ data class AssignmentHistoryDto(
     @Schema(description = "연도", example = "2024")
     val periodYear: Int,
     @Schema(description = "학기", example = "1")
-    val periodSemester: Int
+    val periodSemester: Int,
+    @Schema(description = "기수", example = "15")
+    val periodNumber: Int
 )

@@ -5,4 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface PeriodRepository : JpaRepository<Period, Long>
+interface PeriodRepository : JpaRepository<Period, Long> {
+    fun findByIsCurrent(isCurrent: Boolean): Period?
+    fun findByPeriodNumber(periodNumber: Int): Period?
+}

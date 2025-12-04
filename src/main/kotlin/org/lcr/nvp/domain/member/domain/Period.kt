@@ -14,5 +14,11 @@ class Period(
     val year: Int,
 
     @Column(name = "period_semester", nullable = false)
-    val semester: Int
+    val semester: Int,
+
+    @Column(name = "period_number", nullable = false, unique = true)
+    val periodNumber: Int,
+
+    @Column(name = "is_current", nullable = false)
+    var isCurrent: Boolean = false
 )

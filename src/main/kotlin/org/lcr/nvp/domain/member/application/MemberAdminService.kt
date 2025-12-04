@@ -50,7 +50,8 @@ class MemberAdminService(
                 departmentName = assignment.department.name,
                 positionName = assignment.position.name,
                 periodYear = assignment.period.year,
-                periodSemester = assignment.period.semester
+                periodSemester = assignment.period.semester,
+                periodNumber = assignment.period.periodNumber
             )
         }
 
