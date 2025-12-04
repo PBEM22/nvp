@@ -1,10 +1,7 @@
 package org.lcr.nvp.controller
 
 import org.lcr.nvp.domain.member.application.MemberAdminService
-import org.lcr.nvp.domain.member.dto.AssignPositionRequest
-import org.lcr.nvp.domain.member.dto.MemberDetailResponse
-import org.lcr.nvp.domain.member.dto.MemberSummaryResponse
-import org.lcr.nvp.domain.member.dto.UpdateMemberStatusRequest
+import org.lcr.nvp.domain.member.dto.*
 import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
 import org.springframework.data.domain.Page
@@ -15,26 +12,26 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/admin/members")
+@RequestMapping("/api/admin")
 class MemberAdminController(
     private val memberAdminService: MemberAdminService
 ) {
 
-    @GetMapping
+    @GetMapping("/members")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun getAllMembers(pageable: Pageable): ResponseEntity<ApiResponse<Page<MemberSummaryResponse>>> {
         val members = memberAdminService.getAllMembers(pageable)
         return ResponseEntity.ok(ApiResponse.onSuccess(members))
     }
 
-    @GetMapping("/{memberId}")
+    @GetMapping("/members/{memberId}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun getMemberDetails(@PathVariable memberId: Long): ResponseEntity<ApiResponse<MemberDetailResponse>> {
         val memberDetails = memberAdminService.getMemberDetails(memberId)
         return ResponseEntity.ok(ApiResponse.onSuccess(memberDetails))
     }
 
-    @PutMapping("/{memberId}/status")
+    @PutMapping("/members/{memberId}/status")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun updateMemberStatus(
         @PathVariable memberId: Long,
@@ -44,7 +41,17 @@ class MemberAdminController(
         return ResponseEntity.ok(ApiResponse.onSuccess())
     }
 
-    @PostMapping("/{userId}/assignments")
+    @PostMapping("/users/{userId}/promotion")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    fun promoteToMember(
+        @PathVariable userId: Long,
+        @RequestBody request: PromoteMemberRequest
+    ): ResponseEntity<ApiResponse<CreatedResponse>> {
+        val savedMember = memberAdminService.promoteToMember(userId, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.onSuccess(CreatedResponse(id = savedMember.id)))
+    }
+
+    @PostMapping("/users/{userId}/assignments")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun assignPosition(
         @PathVariable userId: Long,

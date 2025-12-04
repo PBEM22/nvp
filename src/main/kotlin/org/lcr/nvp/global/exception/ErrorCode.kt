@@ -10,6 +10,7 @@ enum class ErrorCode(
     // Common
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "유효하지 않은 입력 값입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다."),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "C003", "해당 요청에 대한 권한이 없습니다."),
 
     // Auth
     EMAIL_DUPLICATION(HttpStatus.BAD_REQUEST, "A001", "이미 사용 중인 이메일입니다."),
@@ -19,11 +20,14 @@ enum class ErrorCode(
     // Member
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "해당 사용자를 찾을 수 없습니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M002", "해당 회원을 찾을 수 없습니다."),
-    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "M003", "해당 부서를 찾을 수 없습니다."),
-    POSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "M004", "해당 직책을 찾을 수 없습니다."),
-    PERIOD_NOT_FOUND(HttpStatus.NOT_FOUND, "M005", "해당 기수를 찾을 수 없습니다."),
-    ASSIGNMENT_DUPLICATION(HttpStatus.BAD_REQUEST, "M006", "이미 해당 기간에 동일한 직책이 할당되어 있습니다."),
+    MEMBER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "M003", "이미 정식 회원으로 등록된 사용자입니다."),
+    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "M004", "해당 부서를 찾을 수 없습니다."),
+    POSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "M005", "해당 직책을 찾을 수 없습니다."),
+    PERIOD_NOT_FOUND(HttpStatus.NOT_FOUND, "M006", "해당 기수를 찾을 수 없습니다."),
+    ASSIGNMENT_DUPLICATION(HttpStatus.BAD_REQUEST, "M007", "이미 해당 기간에 동일한 직책이 할당되어 있습니다."),
 
+    // Board
+    BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "B001", "해당 게시글을 찾을 수 없습니다."),
 
     // JWT
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "J001", "유효하지 않은 토큰입니다."),

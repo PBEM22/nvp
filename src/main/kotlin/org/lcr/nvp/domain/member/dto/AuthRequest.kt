@@ -5,9 +5,7 @@ import java.time.LocalDate
 data class SignupRequest(
     val email: String,
     val password: String,
-    val name: String,
-    val birthday: LocalDate,
-    val isMale: Boolean
+    val name: String
 )
 
 data class LoginRequest(

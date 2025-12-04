@@ -50,17 +50,8 @@ class AuthService(
         ).apply {
             roles.add(defaultRole)
         }
-        val savedUser = userRepository.save(user)
-
-        // Member 생성
-        val member = Member(
-            user = savedUser,
-            birthday = signupRequest.birthday,
-            isMale = signupRequest.isMale
-        )
-        memberRepository.save(member)
-
-        return savedUser
+        
+        return userRepository.save(user)
     }
 
     @Transactional
