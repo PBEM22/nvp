@@ -52,3 +52,45 @@ data class DailyAttendanceStatusResponse(
     @Schema(description = "최종 출석 상태", example = "조퇴")
     val finalStatus: String
 )
+
+@Schema(description = "회원 본인의 출석률 요약 정보 DTO")
+data class MyAttendanceSummaryResponse(
+    @Schema(description = "총 운동일수", example = "10")
+    val totalExerciseDays: Int,
+    @Schema(description = "총 출석일수", example = "8")
+    val totalPresentDays: Int,
+    @Schema(description = "총 지각일수", example = "1")
+    val totalLateDays: Int,
+    @Schema(description = "총 조퇴일수", example = "0")
+    val totalEarlyLeaveDays: Int,
+    @Schema(description = "총 결석일수", example = "1")
+    val totalAbsentDays: Int,
+    @Schema(description = "전체 출석률 (소수점 2자리)", example = "80.00")
+    val attendanceRate: Double
+)
+
+@Schema(description = "회원 본인의 날짜별 출석 상세 정보 DTO")
+data class MyAttendanceDetailResponse(
+    @Schema(description = "운동 날짜", example = "2025-12-01")
+    val date: LocalDate,
+    @Schema(description = "1회차 출석 상태", example = "PRESENT")
+    val round1Status: String,
+    @Schema(description = "2회차 출석 상태", example = "PRESENT")
+    val round2Status: String,
+    @Schema(description = "최종 출석 상태", example = "출석")
+    val finalStatus: String,
+    @Schema(description = "해당 출석 기록의 연도", example = "2025", nullable = true)
+    val periodYear: Int?,
+    @Schema(description = "해당 출석 기록의 학기", example = "1", nullable = true)
+    val periodSemester: Int?,
+    @Schema(description = "해당 출석 기록의 기수 번호", example = "16", nullable = true)
+    val periodNumber: Int?
+)
+
+@Schema(description = "회원 본인의 출석률 및 상세 내역 응답 DTO")
+data class MyAttendanceResponse(
+    @Schema(description = "출석률 요약 정보")
+    val summary: MyAttendanceSummaryResponse,
+    @Schema(description = "날짜별 출석 상세 내역")
+    val details: List<MyAttendanceDetailResponse>
+)
