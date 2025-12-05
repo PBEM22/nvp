@@ -30,7 +30,7 @@ class PeriodService(
 
     @Transactional(readOnly = true)
     fun getAllPeriods(): List<PeriodResponse> {
-        return periodRepository.findAll().map { period ->
+        return periodRepository.findAllByOrderByPeriodNumberDesc().map { period ->
             PeriodResponse(
                 id = period.id,
                 year = period.year,

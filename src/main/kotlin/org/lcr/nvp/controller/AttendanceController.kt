@@ -1,5 +1,10 @@
 package org.lcr.nvp.controller
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
+import org.lcr.nvp.domain.attendance.application.AttendanceService
+import org.lcr.nvp.domain.attendance.dto.CheckInRequest
 import org.lcr.nvp.domain.attendance.dto.DailyAttendanceStatusResponse
 import org.lcr.nvp.domain.attendance.dto.GenerateCodeRequest
 import org.lcr.nvp.domain.attendance.dto.GenerateCodeResponse
