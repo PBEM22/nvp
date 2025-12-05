@@ -8,4 +8,5 @@ import java.time.LocalDate
 @Repository
 interface ExerciseDateRepository : JpaRepository<ExerciseDate, Long> {
     fun findByDate(date: LocalDate): ExerciseDate?
+    fun findAllByOrderByDateDesc(): List<ExerciseDate>
 }

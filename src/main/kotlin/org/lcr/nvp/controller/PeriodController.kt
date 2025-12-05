@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "운영진 기수 관리 API", description = "운영진이 기수(Period)를 관리하는 API")
 @RestController
 @RequestMapping("/api/admin/periods")
-@PreAuthorize("hasRole('ROLE_ADMIN')") // 이 컨트롤러의 모든 기능은 총괄 관리자(ADMIN)만 가능
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')") // 이 컨트롤러의 모든 기능은 총괄 관리자(ADMIN)만 가능
 class PeriodController(
     private val periodService: PeriodService
 ) {

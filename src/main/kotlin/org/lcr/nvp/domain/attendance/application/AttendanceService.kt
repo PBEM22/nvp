@@ -5,6 +5,9 @@ import org.lcr.nvp.domain.attendance.domain.AttendanceStatus
 import org.lcr.nvp.domain.attendance.domain.ExerciseDate
 import org.lcr.nvp.domain.attendance.dto.CheckInRequest
 import org.lcr.nvp.domain.attendance.dto.GenerateCodeResponse
+import org.lcr.nvp.domain.attendance.dto.MyAttendanceDetailResponse
+import org.lcr.nvp.domain.attendance.dto.MyAttendanceResponse
+import org.lcr.nvp.domain.attendance.dto.MyAttendanceSummaryResponse
 import org.lcr.nvp.domain.attendance.repository.AttendanceRepository
 import org.lcr.nvp.domain.attendance.repository.ExerciseDateRepository
 import org.lcr.nvp.domain.member.repository.MemberAssignmentRepository
@@ -16,6 +19,8 @@ import org.lcr.nvp.global.exception.ErrorCode
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -185,6 +190,117 @@ class AttendanceService(
                 )
             }
         }
+    }
+
+    /**
+     * 회원 본인의 출석률 및 상세 내역을 기수별로 그룹화하여 조회합니다.
+     */
+    @Transactional(readOnly = true)
+    fun getMyAttendance(userEmail: String): org.lcr.nvp.domain.attendance.dto.GroupedMyAttendanceResponse {
+        val user = userRepository.findByEmail(userEmail)
+            ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
+        val member = memberRepository.findByUser(user)
+            ?: throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+
+        // 1. 현재 활동 기수 정보 및 모든 기수 정보 조회
+        val currentPeriod = periodRepository.findByIsCurrent(true)
+        val allPeriods = periodRepository.findAll()
+        val periodMap = allPeriods.associateBy { period ->
+            // 1학기: 1월~6월, 2학기: 7월~12월로 가정
+            "${period.year}-${period.semester}"
+        }
+
+        // 2. 회원의 모든 출석 기록 조회
+        val myAttendances = attendanceRepository.findByMemberWithExerciseDate(member)
+
+        // 3. 출석 기록을 Period를 키로 하는 맵으로 수동 그룹화
+        val attendancesByPeriod = mutableMapOf<org.lcr.nvp.domain.member.domain.Period, MutableList<Attendance>>()
+        myAttendances.forEach { attendance ->
+            val exerciseDate = attendance.exerciseDate
+            val exerciseYear = exerciseDate.date.year
+            val exerciseMonth = exerciseDate.date.monthValue
+            val exerciseSemester = if (exerciseMonth in 1..6) 1 else 2
+            val periodKey = "${exerciseYear}-${exerciseSemester}"
+            val period = periodMap[periodKey]
+
+            if (period != null) {
+                attendancesByPeriod.getOrPut(period) { mutableListOf() }.add(attendance)
+            }
+        }
+
+        // 4. 각 기수별로 출석 정보 처리
+        val periodAttendanceList = attendancesByPeriod.map { (period, attendances) ->
+            var totalPresentDays = 0
+            var totalLateDays = 0
+            var totalEarlyLeaveDays = 0
+            var totalAbsentDays = 0
+
+            val totalExerciseDaysInPeriod = attendances.size
+
+            val details = attendances.map { attendance ->
+                val finalStatus = when {
+                    attendance.round1Status == AttendanceStatus.PRESENT && attendance.round2Status == AttendanceStatus.PRESENT -> {
+                        totalPresentDays++
+                        "출석"
+                    }
+                    attendance.round1Status == AttendanceStatus.ABSENT && attendance.round2Status == AttendanceStatus.PRESENT -> {
+                        totalLateDays++
+                        "지각"
+                    }
+                    attendance.round1Status == AttendanceStatus.PRESENT && attendance.round2Status == AttendanceStatus.ABSENT -> {
+                        totalEarlyLeaveDays++
+                        "조퇴"
+                    }
+                    else -> {
+                        totalAbsentDays++
+                        "결석"
+                    }
+                }
+                org.lcr.nvp.domain.attendance.dto.MyAttendanceDetailResponse(
+                    date = attendance.exerciseDate.date,
+                    round1Status = attendance.round1Status.name,
+                    round2Status = attendance.round2Status.name,
+                    finalStatus = finalStatus,
+                    periodYear = period.year,
+                    periodSemester = period.semester,
+                    periodNumber = period.periodNumber
+                )
+            }.sortedByDescending { it.date }
+
+            val attendanceRate = if (totalExerciseDaysInPeriod > 0) {
+                (BigDecimal(totalPresentDays + totalLateDays + totalEarlyLeaveDays) / BigDecimal(totalExerciseDaysInPeriod) * BigDecimal(100))
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .toDouble()
+            } else {
+                0.00
+            }
+
+            val summary = org.lcr.nvp.domain.attendance.dto.PeriodAttendanceSummary(
+                totalExerciseDays = totalExerciseDaysInPeriod,
+                totalPresentDays = totalPresentDays,
+                totalLateDays = totalLateDays,
+                totalEarlyLeaveDays = totalEarlyLeaveDays,
+                totalAbsentDays = totalAbsentDays,
+                attendanceRate = attendanceRate
+            )
+
+            val periodInfo = org.lcr.nvp.domain.attendance.dto.PeriodInfo(
+                year = period.year,
+                semester = period.semester,
+                number = period.periodNumber
+            )
+
+            org.lcr.nvp.domain.attendance.dto.PeriodAttendance(
+                period = periodInfo,
+                summary = summary,
+                details = details
+            )
+        }.sortedByDescending { it.period.number }
+
+        return org.lcr.nvp.domain.attendance.dto.GroupedMyAttendanceResponse(
+            currentPeriodNumber = currentPeriod?.periodNumber,
+            attendanceByPeriods = periodAttendanceList
+        )
     }
 }
 

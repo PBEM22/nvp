@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface PeriodRepository : JpaRepository<Period, Long> {
     fun findByIsCurrent(isCurrent: Boolean): Period?
     fun findByPeriodNumber(periodNumber: Int): Period?
+    fun findAllByOrderByPeriodNumberDesc(): List<Period>
 }
