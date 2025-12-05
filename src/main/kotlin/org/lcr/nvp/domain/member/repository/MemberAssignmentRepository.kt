@@ -20,4 +20,7 @@ interface MemberAssignmentRepository : JpaRepository<MemberAssignment, Long> {
      */
     @Query("SELECT ma FROM MemberAssignment ma JOIN FETCH ma.department JOIN FETCH ma.position JOIN FETCH ma.period WHERE ma.member = :member ORDER BY ma.period.year DESC, ma.period.semester DESC")
     fun findAllByMemberWithDetails(@Param("member") member: Member): List<MemberAssignment>
+
+    @Query("SELECT ma FROM MemberAssignment ma JOIN FETCH ma.member JOIN FETCH ma.member.user WHERE ma.period = :period")
+    fun findAllByPeriodWithMember(@Param("period") period: Period): List<MemberAssignment>
 }

@@ -24,6 +24,7 @@ enum class ErrorCode(
     DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "M004", "해당 부서를 찾을 수 없습니다."),
     POSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "M005", "해당 직책을 찾을 수 없습니다."),
     PERIOD_NOT_FOUND(HttpStatus.NOT_FOUND, "M006", "해당 기수를 찾을 수 없습니다."),
+    PERIOD_NUMBER_DUPLICATION(HttpStatus.BAD_REQUEST, "M008", "이미 존재하는 기수 번호입니다."),
     ASSIGNMENT_DUPLICATION(HttpStatus.BAD_REQUEST, "M007", "이미 해당 기간에 동일한 직책이 할당되어 있습니다."),
 
     // Board
@@ -31,6 +32,11 @@ enum class ErrorCode(
 
     // Comment
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CM01", "해당 댓글을 찾을 수 없습니다."),
+
+    // Attendance
+    ATTENDANCE_CODE_ALREADY_EXISTS(HttpStatus.CONFLICT, "AT01", "이미 유효한 출석 코드가 존재합니다."),
+    INVALID_ATTENDANCE_CODE(HttpStatus.BAD_REQUEST, "AT02", "출석 코드가 유효하지 않습니다."),
+    EXERCISE_DATE_NOT_FOUND(HttpStatus.NOT_FOUND, "AT03", "해당 운동일을 찾을 수 없습니다."),
 
     // JWT
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "J001", "유효하지 않은 토큰입니다."),
