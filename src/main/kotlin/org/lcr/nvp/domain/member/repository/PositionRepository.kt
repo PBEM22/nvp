@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface PositionRepository : JpaRepository<Position, Long>
+interface PositionRepository : JpaRepository<Position, Long> {
+    fun findByName(name: String): Position?
+}

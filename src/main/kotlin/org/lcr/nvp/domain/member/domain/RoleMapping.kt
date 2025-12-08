@@ -1,27 +1,21 @@
 package org.lcr.nvp.domain.member.domain
 
 import jakarta.persistence.*
-import org.lcr.nvp.global.common.BaseTimeEntity
 
 @Entity
 @Table(
-    name = "member_department_positions",
+    name = "role_mappings",
     uniqueConstraints = [
         UniqueConstraint(
-            name = "uk_member_assignment",
-            columnNames = ["member_id", "dept_id", "position_id", "period_id"]
+            name = "uk_role_mapping",
+            columnNames = ["dept_id", "position_id"]
         )
     ]
 )
-class MemberAssignment(
+class RoleMapping(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "dept_position_id")
     val id: Long = 0,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    val member: Member,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dept_id", nullable = false)
@@ -31,11 +25,6 @@ class MemberAssignment(
     @JoinColumn(name = "position_id", nullable = false)
     val position: Position,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "period_id", nullable = false)
-    val period: Period,
-
     @Column(name = "display_name", nullable = false)
     var displayName: String
-
-) : BaseTimeEntity()
+)

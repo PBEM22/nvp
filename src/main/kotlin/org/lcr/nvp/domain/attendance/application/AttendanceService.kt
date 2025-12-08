@@ -3,19 +3,14 @@ package org.lcr.nvp.domain.attendance.application
 import org.lcr.nvp.domain.attendance.domain.Attendance
 import org.lcr.nvp.domain.attendance.domain.AttendanceStatus
 import org.lcr.nvp.domain.attendance.domain.ExerciseDate
-import org.lcr.nvp.domain.attendance.dto.CheckInRequest
-import org.lcr.nvp.domain.attendance.dto.GenerateCodeResponse
-import org.lcr.nvp.domain.attendance.dto.MyAttendanceDetailResponse
-import org.lcr.nvp.domain.attendance.dto.MyAttendanceResponse
-import org.lcr.nvp.domain.attendance.dto.MyAttendanceSummaryResponse
+import org.lcr.nvp.domain.attendance.dto.*
 import org.lcr.nvp.domain.attendance.repository.AttendanceRepository
 import org.lcr.nvp.domain.attendance.repository.ExerciseDateRepository
 import org.lcr.nvp.domain.member.repository.MemberAssignmentRepository
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.PeriodRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
-import org.lcr.nvp.global.exception.BusinessException
-import org.lcr.nvp.global.exception.ErrorCode
+import org.lcr.nvp.global.exception.domain.*
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -46,10 +41,10 @@ class AttendanceService(
      */
     fun generateAttendanceCode(round: Int): GenerateCodeResponse {
         if (round !in 1..2) {
-            throw BusinessException(ErrorCode.INVALID_INPUT_VALUE)
+            throw InvalidInputValueException()
         }
         if (redisTemplate.hasKey(ATTENDANCE_CODE_KEY)) {
-            throw BusinessException(ErrorCode.ATTENDANCE_CODE_ALREADY_EXISTS)
+            throw AttendanceCodeAlreadyExistsException()
         }
 
         // 오늘 날짜의 ExerciseDate를 찾거나 생성합니다.
@@ -81,18 +76,18 @@ class AttendanceService(
         val codeData = hashOps.entries(ATTENDANCE_CODE_KEY)
 
         if (codeData.isEmpty() || codeData["code"] != request.code) {
-            throw BusinessException(ErrorCode.INVALID_ATTENDANCE_CODE)
+            throw InvalidAttendanceCodeException()
         }
 
         val round = codeData["round"]!!.toInt()
         val exerciseDateId = codeData["exerciseDateId"]!!.toLong()
 
         val user = userRepository.findByEmail(userEmail)
-            ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
+            ?: throw UserNotFoundException()
         val member = memberRepository.findByUser(user)
-            ?: throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+            ?: throw MemberNotFoundException()
         val exerciseDate = exerciseDateRepository.findById(exerciseDateId)
-            .orElseThrow { BusinessException(ErrorCode.EXERCISE_DATE_NOT_FOUND) }
+            .orElseThrow { ExerciseDateNotFoundException() }
 
         // 해당 날짜에 대한 회원의 출석 기록을 찾거나 새로 생성합니다.
         val attendance = attendanceRepository.findByMemberAndExerciseDate(member, exerciseDate)
@@ -125,15 +120,15 @@ class AttendanceService(
      */
     fun updateAttendanceStatus(request: org.lcr.nvp.domain.attendance.dto.UpdateAttendanceRequest) {
         val member = memberRepository.findById(request.memberId)
-            .orElseThrow { BusinessException(ErrorCode.MEMBER_NOT_FOUND) }
+            .orElseThrow { MemberNotFoundException() }
 
         val exerciseDate = exerciseDateRepository.findByDate(request.date)
-            ?: throw BusinessException(ErrorCode.EXERCISE_DATE_NOT_FOUND)
+            ?: throw ExerciseDateNotFoundException()
 
         val newStatus = try {
             AttendanceStatus.valueOf(request.status)
         } catch (e: IllegalArgumentException) {
-            throw BusinessException(ErrorCode.INVALID_INPUT_VALUE)
+            throw InvalidInputValueException()
         }
 
         val attendance = attendanceRepository.findByMemberAndExerciseDate(member, exerciseDate)
@@ -142,7 +137,7 @@ class AttendanceService(
         when (request.round) {
             1 -> attendance.round1Status = newStatus
             2 -> attendance.round2Status = newStatus
-            else -> throw BusinessException(ErrorCode.INVALID_INPUT_VALUE)
+            else -> throw InvalidInputValueException()
         }
     }
 
@@ -156,7 +151,7 @@ class AttendanceService(
 
         // 2. 현재 활동 기수(Period) 정보 조회
         val currentPeriod = periodRepository.findByIsCurrent(true)
-            ?: throw BusinessException(ErrorCode.PERIOD_NOT_FOUND) // 현재 활동 기수가 설정되지 않았으면 에러
+            ?: throw PeriodNotFoundException() // 현재 활동 기수가 설정되지 않았으면 에러
 
         // 3. 현재 활동 기수에 속한 모든 회원 조회
         val currentMembers = memberAssignmentRepository.findAllByPeriodWithMember(currentPeriod)
@@ -198,9 +193,9 @@ class AttendanceService(
     @Transactional(readOnly = true)
     fun getMyAttendance(userEmail: String): org.lcr.nvp.domain.attendance.dto.GroupedMyAttendanceResponse {
         val user = userRepository.findByEmail(userEmail)
-            ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
+            ?: throw UserNotFoundException()
         val member = memberRepository.findByUser(user)
-            ?: throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+            ?: throw MemberNotFoundException()
 
         // 1. 현재 활동 기수 정보 및 모든 기수 정보 조회
         val currentPeriod = periodRepository.findByIsCurrent(true)

@@ -5,8 +5,8 @@ import org.lcr.nvp.domain.member.dto.MemberDetailResponse
 import org.lcr.nvp.domain.member.repository.MemberAssignmentRepository
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
-import org.lcr.nvp.global.exception.BusinessException
-import org.lcr.nvp.global.exception.ErrorCode
+import org.lcr.nvp.global.exception.domain.MemberNotFoundException
+import org.lcr.nvp.global.exception.domain.UserNotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,10 +20,10 @@ class MemberService(
 
     fun getMyInfo(userEmail: String): MemberDetailResponse {
         val user = userRepository.findByEmail(userEmail)
-            ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
+            ?: throw UserNotFoundException()
 
         val member = memberRepository.findByUser(user)
-            ?: throw BusinessException(ErrorCode.MEMBER_NOT_FOUND) // 정식 회원이 아닌 경우
+            ?: throw MemberNotFoundException() // 정식 회원이 아닌 경우
 
         val assignments = memberAssignmentRepository.findAllByMemberWithDetails(member)
 
@@ -42,8 +42,8 @@ class MemberService(
             userId = member.user.id,
             email = member.user.email,
             name = member.user.name,
-            birthday = member.birthday,
-            isMale = member.isMale,
+            birthday = member.user.birthday,
+            isMale = member.user.isMale,
             profileImageUrl = member.profileImageUrl,
             backNumber = member.backNumber,
             isPublic = member.isPublic,

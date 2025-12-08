@@ -11,6 +11,7 @@ enum class ErrorCode(
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "유효하지 않은 입력 값입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "C003", "해당 요청에 대한 권한이 없습니다."),
+    DATA_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "C004", "데이터 무결성 위반, 요청을 처리할 수 없습니다."),
 
     // Auth
     EMAIL_DUPLICATION(HttpStatus.BAD_REQUEST, "A001", "이미 사용 중인 이메일입니다."),

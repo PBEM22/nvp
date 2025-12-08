@@ -5,8 +5,8 @@ import org.lcr.nvp.domain.member.dto.CreatePeriodRequest
 import org.lcr.nvp.domain.member.dto.PeriodResponse
 import org.lcr.nvp.domain.member.dto.UpdatePeriodRequest
 import org.lcr.nvp.domain.member.repository.PeriodRepository
-import org.lcr.nvp.global.exception.BusinessException
-import org.lcr.nvp.global.exception.ErrorCode
+import org.lcr.nvp.global.exception.domain.PeriodNotFoundException
+import org.lcr.nvp.global.exception.domain.PeriodNumberDuplicationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,7 +18,7 @@ class PeriodService(
 
     fun createPeriod(request: CreatePeriodRequest): Period {
         if (periodRepository.findByPeriodNumber(request.periodNumber) != null) {
-            throw BusinessException(ErrorCode.PERIOD_NUMBER_DUPLICATION)
+            throw PeriodNumberDuplicationException()
         }
         val period = Period(
             year = request.year,
@@ -43,11 +43,11 @@ class PeriodService(
 
     fun updatePeriod(periodId: Long, request: UpdatePeriodRequest): Period {
         val period = periodRepository.findById(periodId)
-            .orElseThrow { BusinessException(ErrorCode.PERIOD_NOT_FOUND) }
+            .orElseThrow { PeriodNotFoundException() }
 
         // 수정하려는 기수 번호가 현재 기수 번호와 다른데, 다른 기수가 이미 사용 중인 번호일 경우 예외 처리
         if (period.periodNumber != request.periodNumber && periodRepository.findByPeriodNumber(request.periodNumber) != null) {
-            throw BusinessException(ErrorCode.PERIOD_NUMBER_DUPLICATION)
+            throw PeriodNumberDuplicationException()
         }
 
         period.year = request.year
@@ -59,7 +59,7 @@ class PeriodService(
 
     fun deletePeriod(periodId: Long) {
         val period = periodRepository.findById(periodId)
-            .orElseThrow { BusinessException(ErrorCode.PERIOD_NOT_FOUND) }
+            .orElseThrow { PeriodNotFoundException() }
 
         // TODO: 해당 기수에 할당된 회원이 있는지 확인하는 로직 추가 필요
         // if (memberAssignmentRepository.existsByPeriod(period)) {
@@ -83,7 +83,7 @@ class PeriodService(
 
         // 2. 새로 지정된 기수를 '현재 기수'로 설정
         val newCurrentPeriod = periodRepository.findById(periodId)
-            .orElseThrow { BusinessException(ErrorCode.PERIOD_NOT_FOUND) }
+            .orElseThrow { PeriodNotFoundException() }
         newCurrentPeriod.isCurrent = true
     }
 }

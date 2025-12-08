@@ -11,7 +11,7 @@ data class MemberSummaryResponse(
     val userId: Long,
     @Schema(description = "이메일", example = "test@example.com")
     val email: String,
-    @Schema(description = "이름", example = "홍길동")
+    @Schema(description = "이름", example = "김엔비")
     val name: String,
     @Schema(description = "회원 상태 (e.g., ACTIVE_MEMBER, ALUMNI)", example = "ACTIVE_MEMBER")
     val membershipStatus: String
@@ -25,15 +25,15 @@ data class MemberDetailResponse(
     val userId: Long,
     @Schema(description = "이메일", example = "test@example.com")
     val email: String,
-    @Schema(description = "이름", example = "홍길동")
+    @Schema(description = "이름", example = "김엔비")
     val name: String,
-    @Schema(description = "생년월일", example = "2000-01-01")
+    @Schema(description = "생년월일", example = "2000-01-15")
     val birthday: LocalDate,
     @Schema(description = "성별 (true: 남성, false: 여성)", example = "true")
     val isMale: Boolean,
-    @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
+    @Schema(description = "프로필 이미지 URL", example = "https://nvp-bucket.s3.amazonaws.com/profiles/1/profile.jpg", nullable = true)
     val profileImageUrl: String?,
-    @Schema(description = "등번호", example = "10")
+    @Schema(description = "등번호", example = "10", nullable = true)
     val backNumber: Int?,
     @Schema(description = "연혁 공개 여부", example = "true")
     val isPublic: Boolean,
@@ -47,12 +47,14 @@ data class MemberDetailResponse(
 data class AssignmentHistoryDto(
     @Schema(description = "부서명", example = "훈련부")
     val departmentName: String,
-    @Schema(description = "직책명", example = "파트장(훈련부장)")
+    @Schema(description = "직책명", example = "파트장")
     val positionName: String,
+    @Schema(description = "표시 이름", example = "훈련부장")
+    val displayName: String,
     @Schema(description = "연도", example = "2024")
     val periodYear: Int,
     @Schema(description = "학기", example = "1")
     val periodSemester: Int,
-    @Schema(description = "기수", example = "15")
+    @Schema(description = "기수", example = "37")
     val periodNumber: Int
 )

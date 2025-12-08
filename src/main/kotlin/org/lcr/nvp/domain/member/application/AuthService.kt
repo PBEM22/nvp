@@ -7,8 +7,7 @@ import org.lcr.nvp.domain.member.dto.*
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.RoleRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
-import org.lcr.nvp.global.exception.BusinessException
-import org.lcr.nvp.global.exception.ErrorCode
+import org.lcr.nvp.global.exception.domain.*
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.security.authentication.AuthenticationManager
@@ -35,22 +34,30 @@ class AuthService(
     @Transactional
     fun signup(signupRequest: SignupRequest): User {
         if (userRepository.findByEmail(signupRequest.email) != null) {
-            throw BusinessException(ErrorCode.EMAIL_DUPLICATION)
+            throw EmailDuplicationException()
         }
 
         val defaultRole = roleRepository.findByRoleName("ROLE_USER")
-            ?: throw BusinessException(ErrorCode.ROLE_NOT_FOUND)
+            ?: throw RoleNotFoundException()
+
+        val isMale = when (signupRequest.gender) {
+            "남성" -> true
+            "여성" -> false
+            else -> throw InvalidInputValueException()
+        }
 
         // User 생성
         val user = User(
             email = signupRequest.email,
             password = passwordEncoder.encode(signupRequest.password),
             name = signupRequest.name,
+            birthday = signupRequest.birthday,
+            isMale = isMale,
             loginType = "LOCAL"
         ).apply {
             roles.add(defaultRole)
         }
-        
+
         return userRepository.save(user)
     }
 
@@ -62,13 +69,13 @@ class AuthService(
                 UsernamePasswordAuthenticationToken(loginRequest.email, loginRequest.password)
             )
         } catch (e: Exception) {
-            throw BusinessException(ErrorCode.LOGIN_FAILED)
+            throw LoginFailedException()
         }
 
         SecurityContextHolder.getContext().authentication = authentication
 
         val user = userRepository.findByEmail(loginRequest.email)
-            ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
+            ?: throw UserNotFoundException()
 
         val member = memberRepository.findByUser(user)
 
@@ -97,12 +104,12 @@ class AuthService(
         // Redis에 저장된 Refresh Token과 일치하는지 확인
         val storedRefreshToken = redisTemplate.opsForValue().get(userEmail)
         if (storedRefreshToken == null || storedRefreshToken != refreshToken) {
-            throw BusinessException(ErrorCode.INVALID_REFRESH_TOKEN)
+            throw InvalidRefreshTokenException()
         }
 
         // 새로운 토큰 생성을 위해 사용자 정보 다시 가져오기
         val user = userRepository.findByEmail(userEmail)
-            ?: throw BusinessException(ErrorCode.USER_NOT_FOUND)
+            ?: throw UserNotFoundException()
         val authentication = UsernamePasswordAuthenticationToken(
             user.email, null, user.roles.map { org.springframework.security.core.authority.SimpleGrantedAuthority(it.roleName) }
         )

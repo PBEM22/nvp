@@ -11,5 +11,5 @@ class Department(
     val id: Long = 0,
 
     @Column(name = "dept_name", nullable = false, unique = true)
-    val name: String
+    var name: String
 )
