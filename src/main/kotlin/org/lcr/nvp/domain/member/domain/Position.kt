@@ -11,5 +11,5 @@ class Position(
     val id: Long = 0,
 
     @Column(name = "position_name", nullable = false, unique = true)
-    val name: String
+    var name: String
 )

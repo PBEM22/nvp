@@ -8,12 +8,17 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface MemberAssignmentRepository : JpaRepository<MemberAssignment, Long> {
-    fun existsByMemberAndDepartmentAndPositionAndPeriod(
-        member: Member,
-        department: Department,
-        position: Position,
-        period: Period
+
+    @Query("SELECT COUNT(ma) > 0 FROM MemberAssignment ma WHERE ma.member = :member AND ma.department = :department AND ma.position = :position AND ma.period = :period")
+    fun existsWithDetails(
+        @Param("member") member: Member,
+        @Param("department") department: Department,
+        @Param("position") position: Position,
+        @Param("period") period: Period
     ): Boolean
+
+    fun existsByDepartment(department: Department): Boolean
+    fun existsByPosition(position: Position): Boolean
 
     /**
      * 특정 회원의 모든 직책 할당 이력을 기간(연도, 학기)의 내림차순으로 조회합니다.

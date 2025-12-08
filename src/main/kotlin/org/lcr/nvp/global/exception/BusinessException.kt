@@ -1,5 +1,8 @@
 package org.lcr.nvp.global.exception
 
-class BusinessException(
-    val errorCode: ErrorCode
-) : RuntimeException(errorCode.message)
+open class BusinessException(
+    val errorCode: ErrorCode,
+    override val message: String
+) : RuntimeException(message) {
+    constructor(errorCode: ErrorCode) : this(errorCode, errorCode.message)
+}

@@ -2,6 +2,7 @@ package org.lcr.nvp.domain.member.domain
 
 import jakarta.persistence.*
 import org.lcr.nvp.global.common.BaseTimeEntity
+import java.time.LocalDate
 
 @Entity
 @Table(name = "users")
@@ -19,6 +20,12 @@ class User(
 
     @Column(nullable = false)
     var name: String,
+
+    @Column(nullable = false)
+    var birthday: LocalDate,
+
+    @Column(name = "is_male", nullable = false)
+    var isMale: Boolean,
 
     @Column(name = "login_type", nullable = false)
     val loginType: String,
