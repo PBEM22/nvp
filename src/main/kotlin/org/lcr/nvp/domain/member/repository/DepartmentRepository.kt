@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface DepartmentRepository : JpaRepository<Department, Long> {
     fun findByName(name: String): Department?
+    fun findAllByOrderByIdAsc(): List<Department>
 }

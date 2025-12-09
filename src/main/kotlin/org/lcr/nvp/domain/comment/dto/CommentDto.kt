@@ -29,8 +29,8 @@ data class UpdateCommentRequest(
 data class CommentResponse(
     @Schema(description = "댓글 ID", example = "1")
     val commentId: Long,
-    @Schema(description = "작성자 이름", example = "김댓글")
-    val authorName: String,
+    @Schema(description = "작성자 이름", example = "김엔비", nullable = true)
+    val authorName: String?,
     @Schema(description = "댓글 내용", example = "좋은 글 감사합니다.")
     val content: String,
     @Schema(description = "작성일시")

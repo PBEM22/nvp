@@ -2,6 +2,8 @@ package org.lcr.nvp.config
 
 import org.lcr.nvp.config.jwt.JwtAuthenticationFilter
 import org.lcr.nvp.config.jwt.JwtExceptionFilter
+import org.lcr.nvp.config.security.oauth.CustomOAuth2UserService
+import org.lcr.nvp.config.security.oauth.OAuth2AuthenticationSuccessHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
@@ -20,7 +22,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity // 메소드 수준의 보안 설정을 활성화
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    private val jwtExceptionFilter: JwtExceptionFilter
+    private val jwtExceptionFilter: JwtExceptionFilter,
+    private val customOAuth2UserService: CustomOAuth2UserService,
+    private val oAuth2AuthenticationSuccessHandler: OAuth2AuthenticationSuccessHandler
 ) {
 
     @Bean
@@ -44,6 +48,12 @@ class SecurityConfig(
                 authorize
                     .requestMatchers("/**", "/api/auth/**", "/error").permitAll() // 특정 경로는 인증 없이 허용
                     .anyRequest().authenticated() // 나머지 모든 경로는 인증 필요
+            }
+            .oauth2Login { oauth2 ->
+                oauth2.userInfoEndpoint { userInfo ->
+                    userInfo.userService(customOAuth2UserService) // 사용자 정보 처리 서비스 설정
+                }
+                oauth2.successHandler(oAuth2AuthenticationSuccessHandler) // 로그인 성공 후 처리 핸들러 설정
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterBefore(jwtExceptionFilter, JwtAuthenticationFilter::class.java) // 예외 처리 필터를 인증 필터 앞에 추가
