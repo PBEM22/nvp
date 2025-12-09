@@ -129,6 +129,13 @@ class MemberAdminService(
                 val user = userRepository.findByEmail(email)
                     ?: throw UserNotFoundException()
 
+                // 엑셀 파일의 이름으로 사용자 이름 업데이트
+                val nameStr = getCellData("name")
+                if (nameStr.isNotBlank() && user.name != nameStr) {
+                    user.name = nameStr
+                    userRepository.save(user)
+                }
+
                 val member = memberRepository.findByUser(user) ?: memberRepository.save(Member(user = user))
 
                 val backNumberStr = getCellData("backnumber")
@@ -334,8 +341,14 @@ class MemberAdminService(
         exampleRow.createCell(6).setCellValue("37")
 
 
-        // 컬럼 너비 자동 조정
-        headers.indices.forEach { sheet.autoSizeColumn(it) }
+        // 컬럼 너비 수동 설정
+        sheet.setColumnWidth(0, 30 * 256) // email
+        sheet.setColumnWidth(1, 15 * 256) // name
+        sheet.setColumnWidth(2, 12 * 256) // backNumber
+        sheet.setColumnWidth(3, 25 * 256) // major
+        sheet.setColumnWidth(4, 15 * 256) // department
+        sheet.setColumnWidth(5, 15 * 256) // position
+        sheet.setColumnWidth(6, 15 * 256) // periodNumber
 
         val outputStream = java.io.ByteArrayOutputStream()
         workbook.write(outputStream)
