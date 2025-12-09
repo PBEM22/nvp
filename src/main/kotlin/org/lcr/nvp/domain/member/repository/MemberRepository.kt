@@ -13,4 +13,6 @@ interface MemberRepository : JpaRepository<Member, Long> {
      * @return Member 엔티티 (없으면 null)
      */
     fun findByUser(user: User): Member?
+
+    fun findByBackNumberAndUser_Name(backNumber: Int, name: String): Member?
 }
