@@ -85,7 +85,17 @@ class CommentService(
                 rootComments.add(responseDto)
             }
         }
+        
+        // 계층 구조를 만든 후, 최종적으로 정렬 (루트 댓글과 자식 댓글 모두)
+        rootComments.sortBy { it.createdAt }
+        rootComments.forEach { sortChildren(it) }
+
         return rootComments
+    }
+
+    private fun sortChildren(commentResponse: CommentResponse) {
+        commentResponse.children.sortBy { it.createdAt }
+        commentResponse.children.forEach { sortChildren(it) }
     }
 
     @Transactional

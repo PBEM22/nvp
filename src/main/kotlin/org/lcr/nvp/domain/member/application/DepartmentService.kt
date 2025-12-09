@@ -19,7 +19,7 @@ class DepartmentService(
 ) {
 
     fun getDepartments(): List<DepartmentResponse> {
-        return departmentRepository.findAll().map { DepartmentResponse(it.id, it.name) }
+        return departmentRepository.findAllByOrderByIdAsc().map { DepartmentResponse(it.id, it.name) }
     }
 
     @Transactional

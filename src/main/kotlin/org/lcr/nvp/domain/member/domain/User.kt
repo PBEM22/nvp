@@ -18,14 +18,14 @@ class User(
     @Column(nullable = true)
     var password: String?,
 
-    @Column(nullable = false)
-    var name: String,
+    @Column(nullable = true)
+    var name: String?,
 
-    @Column(nullable = false)
-    var birthday: LocalDate,
+    @Column(nullable = true)
+    var birthday: LocalDate?,
 
-    @Column(name = "is_male", nullable = false)
-    var isMale: Boolean,
+    @Column(name = "is_male", nullable = true)
+    var isMale: Boolean?,
 
     @Column(name = "login_type", nullable = false)
     val loginType: String,

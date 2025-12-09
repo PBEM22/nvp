@@ -11,8 +11,8 @@ data class MemberSummaryResponse(
     val userId: Long,
     @Schema(description = "이메일", example = "test@example.com")
     val email: String,
-    @Schema(description = "이름", example = "김엔비")
-    val name: String,
+    @Schema(description = "이름", example = "김엔비", nullable = true)
+    val name: String?,
     @Schema(description = "회원 상태 (e.g., ACTIVE_MEMBER, ALUMNI)", example = "ACTIVE_MEMBER")
     val membershipStatus: String
 )
@@ -25,16 +25,18 @@ data class MemberDetailResponse(
     val userId: Long,
     @Schema(description = "이메일", example = "test@example.com")
     val email: String,
-    @Schema(description = "이름", example = "김엔비")
-    val name: String,
-    @Schema(description = "생년월일", example = "2000-01-15")
-    val birthday: LocalDate,
-    @Schema(description = "성별 (true: 남성, false: 여성)", example = "true")
-    val isMale: Boolean,
+    @Schema(description = "이름", example = "김엔비", nullable = true)
+    val name: String?,
+    @Schema(description = "생년월일", example = "2000-01-15", nullable = true)
+    val birthday: LocalDate?,
+    @Schema(description = "성별 (true: 남성, false: 여성)", example = "true", nullable = true)
+    val isMale: Boolean?,
     @Schema(description = "프로필 이미지 URL", example = "https://nvp-bucket.s3.amazonaws.com/profiles/1/profile.jpg", nullable = true)
     val profileImageUrl: String?,
     @Schema(description = "등번호", example = "10", nullable = true)
     val backNumber: Int?,
+    @Schema(description = "학과", example = "컴퓨터공학과", nullable = true)
+    val major: String?,
     @Schema(description = "연혁 공개 여부", example = "true")
     val isPublic: Boolean,
     @Schema(description = "회원 상태 (e.g., ACTIVE_MEMBER, ALUMNI)", example = "ACTIVE_MEMBER")
@@ -58,3 +60,4 @@ data class AssignmentHistoryDto(
     @Schema(description = "기수", example = "37")
     val periodNumber: Int
 )
+

@@ -14,8 +14,8 @@ data class BoardSummaryResponse(
     val boardType: String,
     @Schema(description = "게시글 제목", example = "게시글 제목입니다.")
     val title: String,
-    @Schema(description = "작성자 이름", example = "홍길동")
-    val authorName: String,
+    @Schema(description = "작성자 이름", example = "김엔비", nullable = true)
+    val authorName: String?,
     @Schema(description = "작성일시")
     val createdAt: LocalDateTime
 )
@@ -33,8 +33,8 @@ data class BoardDetailResponse(
     val title: String,
     @Schema(description = "게시글 내용", example = "게시글 내용입니다.")
     val content: String,
-    @Schema(description = "작성자 이름", example = "홍길동")
-    val authorName: String,
+    @Schema(description = "작성자 이름", example = "김엔비", nullable = true)
+    val authorName: String?,
     @Schema(description = "작성일시")
     val createdAt: LocalDateTime,
     @Schema(description = "최종 수정일시")

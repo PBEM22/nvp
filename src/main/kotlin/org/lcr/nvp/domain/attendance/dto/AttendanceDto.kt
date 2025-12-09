@@ -43,8 +43,8 @@ data class GenerateCodeResponse(
 data class DailyAttendanceStatusResponse(
     @Schema(description = "회원 ID", example = "1")
     val memberId: Long,
-    @Schema(description = "회원 이름", example = "홍길동")
-    val memberName: String,
+    @Schema(description = "회원 이름", example = "김엔비", nullable = true)
+    val memberName: String?,
     @Schema(description = "1회차 출석 상태", example = "PRESENT")
     val round1Status: String,
     @Schema(description = "2회차 출석 상태", example = "ABSENT")

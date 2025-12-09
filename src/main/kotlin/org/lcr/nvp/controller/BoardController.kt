@@ -13,6 +13,8 @@ import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -43,7 +45,7 @@ class BoardController(
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     fun getBoardList(
-        pageable: Pageable,
+        @PageableDefault(sort = ["id"], direction = Sort.Direction.DESC) pageable: Pageable,
         @Parameter(description = "게시판 타입 (e.g., NOTICE, FREE, PHOTO)") @RequestParam(required = false) boardType: String?
     ): ResponseEntity<ApiResponse<Page<BoardSummaryResponse>>> {
         val boardPage = boardService.getBoardList(pageable, boardType)

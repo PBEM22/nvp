@@ -4,10 +4,7 @@ import org.apache.poi.ss.usermodel.DataFormatter
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.lcr.nvp.domain.member.domain.Member
 import org.lcr.nvp.domain.member.domain.MemberAssignment
-import org.lcr.nvp.domain.member.dto.AssignPositionRequest
-import org.lcr.nvp.domain.member.dto.AssignmentHistoryDto
-import org.lcr.nvp.domain.member.dto.MemberDetailResponse
-import org.lcr.nvp.domain.member.dto.MemberSummaryResponse
+import org.lcr.nvp.domain.member.dto.*
 import org.lcr.nvp.domain.member.repository.*
 import org.lcr.nvp.global.exception.domain.*
 import org.springframework.data.domain.Page
@@ -68,6 +65,7 @@ class MemberAdminService(
             isMale = member.user.isMale,
             profileImageUrl = member.profileImageUrl,
             backNumber = member.backNumber,
+            major = member.major,
             isPublic = member.isPublic,
             membershipStatus = member.membershipStatus,
             assignments = assignmentHistoryDtos
@@ -85,7 +83,6 @@ class MemberAdminService(
         val workbook = XSSFWorkbook(inputStream)
         val sheet = workbook.getSheetAt(0)
 
-        // 1. 헤더 행 찾기 (최대 30번째 줄까지 탐색)
         var headerRowIndex = -1
         for (i in 0..29) {
             val row = sheet.getRow(i) ?: continue
@@ -99,7 +96,6 @@ class MemberAdminService(
             throw InvalidInputValueException()
         }
 
-        // 2. 헤더 맵 생성
         val headerMap = mutableMapOf<String, Int>()
         val headerRow = sheet.getRow(headerRowIndex)
         headerRow.forEach { cell ->
@@ -113,7 +109,6 @@ class MemberAdminService(
             }
         }
 
-        // 3. 데이터 처리
         var successCount = 0
         var failCount = 0
         val errorDetails = mutableListOf<String>()
@@ -139,6 +134,11 @@ class MemberAdminService(
                 val backNumberStr = getCellData("backnumber")
                 if (backNumberStr.isNotBlank()) {
                     member.backNumber = backNumberStr.toIntOrNull() ?: member.backNumber
+                }
+
+                val majorStr = getCellData("major")
+                if (majorStr.isNotBlank()) {
+                    member.major = majorStr
                 }
 
                 val departmentName = getCellData("department")
@@ -188,16 +188,13 @@ class MemberAdminService(
         val user = userRepository.findById(targetUserId)
             .orElseThrow { UserNotFoundException() }
 
-        // 이미 Member인지 확인
         if (memberRepository.findByUser(user) != null) {
             throw MemberAlreadyExistsException()
         }
 
-        // Member 생성 (birthday, isMale은 User에 이미 있으므로 필요 없음)
         val member = Member(user = user)
         val savedMember = memberRepository.save(member)
 
-        // ROLE_MEMBER 역할 부여
         val memberRole = roleRepository.findByRoleName("ROLE_MEMBER")
             ?: throw RoleNotFoundException()
         user.roles.add(memberRole)
@@ -211,7 +208,6 @@ class MemberAdminService(
         val member = memberRepository.findById(memberId)
             .orElseThrow { MemberNotFoundException() }
 
-        // TODO: newStatus가 유효한 값인지 Enum 등으로 검증하는 로직 추가 권장
         member.membershipStatus = newStatus
     }
 
@@ -296,16 +292,17 @@ class MemberAdminService(
             "# email: 사용자의 로그인 이메일 (필수)",
             "# name: 사용자 이름 (필수)",
             "# backNumber: 등번호 (선택)",
+            "# major: 학과 (선택)",
             "# department: 할당할 부서 이름 (필수, 현재 등록된 부서: ${departmentNames})",
             "# position: 할당할 직책 이름 (필수, 현재 등록된 직책: ${positionNames})",
             "# periodNumber: 할당할 기수 숫자 (필수, 예: 37). 한 학기마다 1씩 올라갑니다.",
             "#",
             "# --- [부서/직책 상세 설명] ---",
-            "# 회장단: 파트장(회장), 차장(부회장), 일반(수습/차기회장)",
-            "# 훈련부: 파트장(훈련부장), 차장(훈련부원), 일반(수습)",
+            "# 회장단: 파트장(회장), 차장(부회장)",
+            "# 훈련부: 파트장(훈련부장), 차장(훈련부원)",
             "# 매니저: 파트장(매니저장), 차장(매니저)",
-            "# 총무부: 파트장(총무부장), 차장(총무부원), 일반(수습)",
-            "# 관리부: 파트장(관리부장), 차장(타 부서 소속이 아닌 임원진)",
+            "# 총무부: 파트장(총무부장), 차장(총무부원)",
+            "# 관리부: 파트장(관리부장), 차장(타 부서 소속이 아닌 모든 임원진)",
             "# 일반: 일반(일반 부원), 게스트(동아리 소속이 아닌 회원)"
         )
         instructions.forEachIndexed { index, text ->
@@ -317,7 +314,7 @@ class MemberAdminService(
 
         // --- 헤더 행 ---
         val headerRowIndex = instructions.size + 1 // 설명 아래 한 줄 띄고 헤더 시작
-        val headers = listOf("email", "name", "backNumber", "department", "position", "periodNumber")
+        val headers = listOf("email", "name", "backNumber", "major", "department", "position", "periodNumber")
         val headerRow = sheet.createRow(headerRowIndex)
         headers.forEachIndexed { index, header ->
             headerRow.createCell(index).apply {
@@ -331,9 +328,10 @@ class MemberAdminService(
         exampleRow.createCell(0).setCellValue("#test@example.com")
         exampleRow.createCell(1).setCellValue("임예시")
         exampleRow.createCell(2).setCellValue("13")
-        exampleRow.createCell(3).setCellValue("훈련부")
-        exampleRow.createCell(4).setCellValue("일반")
-        exampleRow.createCell(5).setCellValue("1")
+        exampleRow.createCell(3).setCellValue("컴퓨터공학과")
+        exampleRow.createCell(4).setCellValue("훈련부")
+        exampleRow.createCell(5).setCellValue("일반")
+        exampleRow.createCell(6).setCellValue("37")
 
 
         // 컬럼 너비 자동 조정

@@ -31,6 +31,7 @@ class MemberService(
             AssignmentHistoryDto(
                 departmentName = assignment.department.name,
                 positionName = assignment.position.name,
+                displayName = assignment.displayName,
                 periodYear = assignment.period.year,
                 periodSemester = assignment.period.semester,
                 periodNumber = assignment.period.periodNumber
@@ -46,6 +47,7 @@ class MemberService(
             isMale = member.user.isMale,
             profileImageUrl = member.profileImageUrl,
             backNumber = member.backNumber,
+            major = member.major,
             isPublic = member.isPublic,
             membershipStatus = member.membershipStatus,
             assignments = assignmentHistoryDtos

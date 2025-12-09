@@ -21,6 +21,9 @@ class Member(
     @Column(name = "back_number", nullable = true)
     var backNumber: Int? = null,
 
+    @Column(name = "major", nullable = true)
+    var major: String? = null,
+
     @Column(name = "is_public", nullable = false)
     var isPublic: Boolean = false,
 

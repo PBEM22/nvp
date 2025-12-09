@@ -19,7 +19,7 @@ class PositionService(
 ) {
 
     fun getPositions(): List<PositionResponse> {
-        return positionRepository.findAll().map { PositionResponse(it.id, it.name) }
+        return positionRepository.findAllByOrderByIdAsc().map { PositionResponse(it.id, it.name) }
     }
 
     @Transactional
