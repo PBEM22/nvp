@@ -43,7 +43,16 @@ class MemberController(
         return ResponseEntity.ok(ApiResponse.onSuccess(myAttendance))
     }
 
-    @Operation(summary = "특정 회원 통산 기록 조회", description = "특정 회원의 모든 경기 기록을 합산한 통산 스탯(성공률, 효율 포함)을 조회합니다.")
+    @Operation(summary = "내 통산 기록 조회 (마이페이지용)", description = "로그인된 사용자 본인의 통산 기록을 조회합니다.")
+    @GetMapping("/me/score-record")
+    @PreAuthorize("isAuthenticated()")
+    fun getMyScoreRecord(principal: Principal): ResponseEntity<ApiResponse<ScoreRecordResponse>> {
+        val scoreRecord = scoreRecordService.getMyScoreRecord(principal.name)
+        val response = ScoreRecordResponse.from(scoreRecord)
+        return ResponseEntity.ok(ApiResponse.onSuccess(response))
+    }
+
+    @Operation(summary = "특정 회원 통산 기록 조회 (공개용)", description = "특정 회원의 모든 경기 기록을 합산한 통산 스탯(성공률, 효율 포함)을 조회합니다.")
     @GetMapping("/{memberId}/score-record")
     fun getMemberScoreRecord(
         @Parameter(description = "조회할 회원의 ID") @PathVariable memberId: Long
