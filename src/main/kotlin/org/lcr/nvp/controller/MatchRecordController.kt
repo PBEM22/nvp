@@ -38,9 +38,21 @@ class MatchRecordController(
         @Parameter(description = "경기 승리 여부") @RequestParam("isWin") isWin: Boolean,
         @Parameter(description = "우리 팀의 최종 세트 스코어") @RequestParam("teamScore") teamScore: Int,
         @Parameter(description = "상대 팀의 최종 세트 스코어") @RequestParam("opponentScore") opponentScore: Int,
+        @Parameter(description = "MVP 선수 memberId") @RequestParam("mvpMemberId", required = false) mvpMemberId: Long?,
+        @Parameter(description = "공격왕 선수 memberId") @RequestParam("spikerMemberId", required = false) spikerMemberId: Long?,
+        @Parameter(description = "수비왕 선수 memberId") @RequestParam("defenderMemberId", required = false) defenderMemberId: Long?,
         @Parameter(description = "업로드할 경기 기록 XLSX 파일") @RequestParam("file") file: MultipartFile
     ): ResponseEntity<Void> {
-        matchRecordService.importMatchRecords(matchId, isWin, teamScore, opponentScore, file.inputStream)
+        matchRecordService.importMatchRecords(
+            matchId = matchId,
+            isWin = isWin,
+            teamScore = teamScore,
+            opponentScore = opponentScore,
+            mvpMemberId = mvpMemberId,
+            spikerMemberId = spikerMemberId,
+            defenderMemberId = defenderMemberId,
+            inputStream = file.inputStream
+        )
         return ResponseEntity.ok().build()
     }
 }

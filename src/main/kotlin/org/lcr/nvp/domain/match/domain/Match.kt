@@ -36,6 +36,16 @@ class Match(
 
     var matchLocation: String? = null,
 
-    var matchDate: LocalDate? = null
+    var matchDate: LocalDate? = null,
+
+    // --- MVP 및 수상자 정보 ---
+    var mvpMemberId: Long? = null,
+    var mvpReason: String? = null,
+
+    var spikerMemberId: Long? = null,
+    var spikerReason: String? = null,
+
+    var defenderMemberId: Long? = null,
+    var defenderReason: String? = null
 
 ) : BaseTimeEntity()

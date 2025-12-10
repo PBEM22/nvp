@@ -27,6 +27,13 @@ interface MatchRecordRepository : JpaRepository<MatchRecord, Long> {
     fun findByMatchAndMemberAndSetNumber(match: Match, member: Member, setNumber: Int): MatchRecord?
 
     /**
+     * 특정 경기에 해당하는 모든 경기 기록을 조회합니다.
+     * @param match 조회할 경기
+     * @return 해당 경기의 모든 MatchRecord 리스트
+     */
+    fun findByMatch(match: Match): List<MatchRecord>
+
+    /**
      * 특정 선수가 특정 경기에 출전한 기록이 있는지 확인합니다.
      * @param member 조회할 선수
      * @param match 조회할 경기

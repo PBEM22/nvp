@@ -2,6 +2,7 @@ package org.lcr.nvp.domain.match.application
 
 import org.lcr.nvp.domain.match.domain.ScoreRecord
 import org.lcr.nvp.domain.match.repository.ScoreRecordRepository
+import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
