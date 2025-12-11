@@ -37,7 +37,7 @@ class TournamentService(
 
     @Transactional(readOnly = true)
     fun getAllTournaments(): List<Tournament> {
-        return tournamentRepository.findAll()
+        return tournamentRepository.findAllByOrderByIdDesc()
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +55,16 @@ class TournamentService(
             ?: throw NoSuchElementException("해당 사용자는 회원이 아닙니다.")
 
         return matchRecordRepository.findDistinctTournamentsByMember(member)
+            .sortedBy { it.tournamentName }
+    }
+
+    @Transactional(readOnly = true)
+    fun getTournamentsByMemberId(memberId: Long): List<Tournament> {
+        val member = memberRepository.findById(memberId)
+            .orElseThrow { NoSuchElementException("ID가 ${memberId}인 회원을 찾을 수 없습니다.") }
+
+        return matchRecordRepository.findDistinctTournamentsByMember(member)
+            .sortedBy { it.tournamentName }
     }
 
     @Transactional

@@ -40,7 +40,7 @@ class MatchController(
         return ResponseEntity.ok(ApiResponse.onSuccess(matchResponse))
     }
 
-    @Operation(summary = "경기 상세 정보 조회", description = "특정 경기의 상세 정보, 수상자, 참여 선수의 통산 기록을 모두 조회합니다.")
+    @Operation(summary = "경기 상세 정보 조회", description = "특정 경기의 상세 정보, 수상자, 참여 선수의 경기 기록을 모두 조회합니다.")
     @GetMapping("/{matchId}/details")
     fun getMatchDetails(@PathVariable matchId: Long): ResponseEntity<ApiResponse<MatchDetailResponse>> {
         val response = matchService.getMatchDetails(matchId)

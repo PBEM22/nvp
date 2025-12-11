@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface OpponentSchoolRepository : JpaRepository<OpponentSchool, Long> {
+    fun findAllByOrderBySchoolNameAsc(): List<OpponentSchool>
 }

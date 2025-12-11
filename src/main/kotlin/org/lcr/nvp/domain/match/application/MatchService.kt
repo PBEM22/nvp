@@ -15,6 +15,9 @@ import org.lcr.nvp.domain.match.repository.OpponentSchoolRepository
 import org.lcr.nvp.domain.match.repository.ScoreRecordRepository
 import org.lcr.nvp.domain.match.repository.TournamentRepository
 import org.lcr.nvp.domain.member.repository.MemberRepository
+import org.lcr.nvp.domain.member.dto.MemberMatchResponse
+import org.lcr.nvp.global.exception.BusinessException
+import org.lcr.nvp.global.exception.ErrorCode
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -122,7 +125,7 @@ class MatchService(
 
         val playerMatchStats = recordsByMember.map { (member, records) ->
             MatchPlayerSummaryResponse.from(member, records)
-        }
+        }.sortedWith(compareBy(nullsLast(), { it.backNumber }))
 
         // 4. 최종 DTO 조합
         return MatchDetailResponse.from(match, awardMembers, playerMatchStats)
@@ -138,7 +141,20 @@ class MatchService(
 
         return recordsByMember.map { (member, records) ->
             MatchPlayerSummaryResponse.from(member, records)
-        }
+        }.sortedWith(compareBy(nullsLast(), { it.backNumber }))
+    }
+
+    @Transactional(readOnly = true)
+    fun getMatchesByMember(memberId: Long): List<MemberMatchResponse> {
+        val member = memberRepository.findById(memberId)
+            .orElseThrow { BusinessException(ErrorCode.MEMBER_NOT_FOUND) }
+
+        val matches = matchRecordRepository.findByMember(member)
+            .map { it.match }
+            .distinct()
+            .sortedByDescending { it.matchDate }
+
+        return matches.map { MemberMatchResponse.from(it) }
     }
 
     private fun calculateEfficiency(numerator: Int, denominator: Int): Double {

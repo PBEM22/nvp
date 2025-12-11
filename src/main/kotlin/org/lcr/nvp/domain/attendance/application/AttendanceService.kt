@@ -297,5 +297,25 @@ class AttendanceService(
             attendanceByPeriods = periodAttendanceList
         )
     }
+
+    /**
+     * 특정 회원의 전체 출석 기록을 조회합니다.
+     */
+    @Transactional(readOnly = true)
+    fun getMemberAttendanceHistory(memberId: Long): List<MemberAttendanceHistoryResponse> {
+        val member = memberRepository.findById(memberId)
+            .orElseThrow { MemberNotFoundException() }
+
+        val attendances = attendanceRepository.findByMemberWithExerciseDate(member)
+
+        return attendances.map { attendance ->
+            MemberAttendanceHistoryResponse(
+                date = attendance.exerciseDate.date,
+                round1Status = attendance.round1Status.name,
+                round2Status = attendance.round2Status.name,
+                finalStatus = attendance.getFinalStatus()
+            )
+        }
+    }
 }
 
