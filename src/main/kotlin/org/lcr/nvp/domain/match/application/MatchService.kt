@@ -116,26 +116,16 @@ class MatchService(
             emptyMap()
         }
 
-        // 3. 해당 경기에 참여한 선수들의 통산 기록 조회
+        // 3. 해당 경기에 참여한 선수들의 경기 기록 조회
         val allRecordsInMatch = matchRecordRepository.findByMatch(match)
-        val participatingMembers = allRecordsInMatch.map { it.member }.distinct()
-        
-        val scoreRecords = if (participatingMembers.isNotEmpty()) {
-            scoreRecordRepository.findByMemberIn(participatingMembers)
-        } else {
-            emptyList()
-        }
-        
-        // ScoreRecord가 없는 선수들을 위해 비어있는 ScoreRecord 생성
-        val existingScoreRecordMembers = scoreRecords.map { it.member }
-        val missingScoreRecords = participatingMembers.filterNot { existingScoreRecordMembers.contains(it) }
-            .map { ScoreRecord(member = it) }
+        val recordsByMember = allRecordsInMatch.groupBy { it.member }
 
-        val finalScoreRecords = (scoreRecords + missingScoreRecords)
-            .map { ScoreRecordResponse.from(it) }
+        val playerMatchStats = recordsByMember.map { (member, records) ->
+            MatchPlayerSummaryResponse.from(member, records)
+        }
 
         // 4. 최종 DTO 조합
-        return MatchDetailResponse.from(match, awardMembers, finalScoreRecords)
+        return MatchDetailResponse.from(match, awardMembers, playerMatchStats)
     }
 
     @Transactional(readOnly = true)

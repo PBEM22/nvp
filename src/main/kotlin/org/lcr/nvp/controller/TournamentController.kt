@@ -10,7 +10,9 @@ import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import java.security.Principal
 
 @Tag(name = "대회 관리 API", description = "대회 생성, 조회, 수정 등 관리를 위한 API")
 @RestController
@@ -31,6 +33,15 @@ class TournamentController(
     @GetMapping
     fun getAllTournaments(): ResponseEntity<ApiResponse<List<TournamentResponse>>> {
         val tournaments = tournamentService.getAllTournaments().map { TournamentResponse.from(it) }
+        return ResponseEntity.ok(ApiResponse.onSuccess(tournaments))
+    }
+
+    @Operation(summary = "내(로그인한 사용자)가 참여한 대회 목록 조회")
+    @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
+    fun getMyParticipatedTournaments(principal: Principal): ResponseEntity<ApiResponse<List<TournamentResponse>>> {
+        val tournaments = tournamentService.getMyParticipatedTournaments(principal.name)
+            .map { TournamentResponse.from(it) }
         return ResponseEntity.ok(ApiResponse.onSuccess(tournaments))
     }
 

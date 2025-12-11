@@ -5,7 +5,7 @@ import org.lcr.nvp.domain.match.domain.Match
 import org.lcr.nvp.domain.member.domain.Member
 import java.time.LocalDate
 
-@Schema(description = "경기 상세 정보 응답 DTO (경기 정보, 수상자, 참여선수 통산기록 포함)")
+@Schema(description = "경기 상세 정보 응답 DTO (경기 정보, 수상자, 참여선수 경기기록 포함)")
 data class MatchDetailResponse(
     @Schema(description = "경기 ID")
     val matchId: Long,
@@ -25,14 +25,14 @@ data class MatchDetailResponse(
     @Schema(description = "해당 경기 수상자 정보")
     val awards: MatchAwardsResponse,
 
-    @Schema(description = "해당 경기에 참여한 선수들의 통산 기록 목록")
-    val playerCareerStats: List<ScoreRecordResponse>
+    @Schema(description = "해당 경기에 참여한 선수들의 경기 기록 목록")
+    val playerMatchStats: List<MatchPlayerSummaryResponse>
 ) {
     companion object {
         fun from(
             match: Match,
             awardMembers: Map<Long, Member>,
-            playerCareerStats: List<ScoreRecordResponse>
+            playerMatchStats: List<MatchPlayerSummaryResponse>
         ): MatchDetailResponse {
             return MatchDetailResponse(
                 matchId = match.id!!,
@@ -43,7 +43,7 @@ data class MatchDetailResponse(
                 teamScore = match.teamScore,
                 opponentScore = match.opponentScore,
                 awards = MatchAwardsResponse.from(match, awardMembers),
-                playerCareerStats = playerCareerStats
+                playerMatchStats = playerMatchStats
             )
         }
     }

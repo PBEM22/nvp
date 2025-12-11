@@ -26,9 +26,10 @@ class ScoreRecordService(
     }
 
     @Transactional(readOnly = true)
-    fun getMyScoreRecord(email: String): ScoreRecord {
-        val user = userRepository.findByEmail(email)
-            ?: throw NoSuchElementException("이메일이 ${email}인 사용자를 찾을 수 없습니다.")
+    fun getMyScoreRecord(identifier: String): ScoreRecord {
+        val user = userRepository.findByProviderId(identifier)
+            ?: userRepository.findByEmail(identifier)
+            ?: throw NoSuchElementException("ID 또는 이메일이 ${identifier}인 사용자를 찾을 수 없습니다.")
         val member = memberRepository.findByUser(user)
             ?: throw NoSuchElementException("해당 사용자는 회원이 아닙니다.")
 

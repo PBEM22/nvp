@@ -5,6 +5,8 @@ import org.lcr.nvp.domain.match.domain.MatchRecord
 import org.lcr.nvp.domain.match.domain.Tournament
 import org.lcr.nvp.domain.member.domain.Member
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -40,4 +42,12 @@ interface MatchRecordRepository : JpaRepository<MatchRecord, Long> {
      * @return 출전 기록이 있으면 true, 없으면 false
      */
     fun existsByMemberAndMatch(member: Member, match: Match): Boolean
+
+    /**
+     * 특정 선수가 참여한 모든 대회를 중복 없이 조회합니다.
+     * @param member 조회할 선수
+     * @return 해당 선수가 참여한 Tournament 리스트
+     */
+    @Query("SELECT DISTINCT mr.match.tournament FROM MatchRecord mr WHERE mr.member = :member")
+    fun findDistinctTournamentsByMember(@Param("member") member: Member): List<Tournament>
 }

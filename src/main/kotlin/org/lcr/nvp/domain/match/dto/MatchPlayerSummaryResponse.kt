@@ -18,6 +18,14 @@ data class MatchPlayerSummaryResponse(
     @Schema(description = "해당 경기 총 득점", example = "15")
     val totalScore: Int,
 
+    // 주요 성공 횟수
+    @Schema(description = "공격 성공 수")
+    val attackSuccess: Int,
+    @Schema(description = "디그 성공 수")
+    val digSuccess: Int,
+    @Schema(description = "블로킹 성공 수")
+    val blockSuccess: Int,
+
     // 주요 성공률 및 효율
     @Schema(description = "공격 성공률 (%)")
     val attackSuccessRate: Double,
@@ -47,7 +55,7 @@ data class MatchPlayerSummaryResponse(
             if (denominator == 0) return 0.0
             return (numerator.toDouble() / denominator * 100).roundTo(2)
         }
-        
+
         private fun calculateAvgPerSet(total: Int, sets: Int): Double {
             if (sets == 0) return 0.0
             return (total.toDouble() / sets).roundTo(2)
@@ -67,6 +75,8 @@ data class MatchPlayerSummaryResponse(
             val totalBlockSuccess = records.sumOf { it.blockSuccess }
             val totalServeAttempt = records.sumOf { it.serveAttempt }
             val totalServeError = records.sumOf { it.serveError }
+            val totalDigSuccess = records.sumOf { it.digSuccess }
+
 
             return MatchPlayerSummaryResponse(
                 memberId = member.id!!,
@@ -74,6 +84,10 @@ data class MatchPlayerSummaryResponse(
                 backNumber = member.backNumber,
                 setsPlayed = setsPlayed,
                 totalScore = totalScore,
+
+                attackSuccess = totalAttackSuccess,
+                digSuccess = totalDigSuccess,
+                blockSuccess = totalBlockSuccess,
 
                 attackSuccessRate = calculateRate(totalAttackSuccess, totalAttackAttempt),
                 attackEfficiency = calculateEfficiency(totalAttackSuccess - totalAttackError - totalAttackBlock, totalAttackAttempt),
