@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface TournamentRepository : JpaRepository<Tournament, Long> {
+    fun findAllByOrderByIdDesc(): List<Tournament>
 }

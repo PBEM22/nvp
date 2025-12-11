@@ -50,4 +50,11 @@ interface MatchRecordRepository : JpaRepository<MatchRecord, Long> {
      */
     @Query("SELECT DISTINCT mr.match.tournament FROM MatchRecord mr WHERE mr.member = :member")
     fun findDistinctTournamentsByMember(@Param("member") member: Member): List<Tournament>
+
+    /**
+     * 특정 선수가 참여한 모든 경기 기록을 조회합니다.
+     * @param member 조회할 선수
+     * @return 해당 선수의 모든 MatchRecord 리스트
+     */
+    fun findByMember(member: Member): List<MatchRecord>
 }

@@ -30,7 +30,7 @@ class OpponentSchoolService(
 
     @Transactional(readOnly = true)
     fun getAllOpponentSchools(): List<OpponentSchool> {
-        return opponentSchoolRepository.findAll()
+        return opponentSchoolRepository.findAllByOrderBySchoolNameAsc()
     }
 
     @Transactional

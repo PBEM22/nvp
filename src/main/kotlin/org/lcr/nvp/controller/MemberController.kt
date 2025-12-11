@@ -5,10 +5,14 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.lcr.nvp.domain.attendance.application.AttendanceService
 import org.lcr.nvp.domain.attendance.dto.GroupedMyAttendanceResponse
+import org.lcr.nvp.domain.match.application.MatchService
 import org.lcr.nvp.domain.match.application.ScoreRecordService
+import org.lcr.nvp.domain.match.application.TournamentService
 import org.lcr.nvp.domain.match.dto.ScoreRecordResponse
+import org.lcr.nvp.domain.match.dto.TournamentResponse
 import org.lcr.nvp.domain.member.application.MemberService
 import org.lcr.nvp.domain.member.dto.MemberDetailResponse
+import org.lcr.nvp.domain.member.dto.MemberMatchResponse
 import org.lcr.nvp.global.common.ApiResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -24,7 +28,9 @@ import java.security.Principal
 class MemberController(
     private val memberService: MemberService,
     private val attendanceService: AttendanceService,
-    private val scoreRecordService: ScoreRecordService
+    private val scoreRecordService: ScoreRecordService,
+    private val matchService: MatchService,
+    private val tournamentService: TournamentService
 ) {
 
     @Operation(summary = "내 정보 상세 조회", description = "로그인된 사용자의 상세 정보와 역대 활동 이력을 조회합니다.")
@@ -60,5 +66,33 @@ class MemberController(
         val scoreRecord = scoreRecordService.getScoreRecordByMember(memberId)
         val response = ScoreRecordResponse.from(scoreRecord)
         return ResponseEntity.ok(ApiResponse.onSuccess(response))
+    }
+
+    @Operation(summary = "특정 회원 참여 경기 목록 조회 (공개용)", description = "특정 회원이 참여한 모든 경기의 목록을 조회합니다.")
+    @GetMapping("/{memberId}/matches")
+    fun getMemberMatches(
+        @Parameter(description = "조회할 회원의 ID") @PathVariable memberId: Long
+    ): ResponseEntity<ApiResponse<List<MemberMatchResponse>>> {
+        val matches = matchService.getMatchesByMember(memberId)
+        return ResponseEntity.ok(ApiResponse.onSuccess(matches))
+    }
+
+    @Operation(summary = "특정 회원 참여 대회 목록 조회 (공개용)", description = "특정 회원이 참여한 모든 대회의 목록을 조회합니다.")
+    @GetMapping("/{memberId}/tournaments")
+    fun getMemberTournaments(
+        @Parameter(description = "조회할 회원의 ID") @PathVariable memberId: Long
+    ): ResponseEntity<ApiResponse<List<TournamentResponse>>> {
+        val tournaments = tournamentService.getTournamentsByMemberId(memberId)
+            .map { TournamentResponse.from(it) }
+        return ResponseEntity.ok(ApiResponse.onSuccess(tournaments))
+    }
+
+    @Operation(summary = "특정 회원 상세 정보 조회 (공개용)", description = "특정 회원의 상세 정보를 조회합니다.")
+    @GetMapping("/{memberId}")
+    fun getMemberInfo(
+        @Parameter(description = "조회할 회원의 ID") @PathVariable memberId: Long
+    ): ResponseEntity<ApiResponse<MemberDetailResponse>> {
+        val memberInfo = memberService.getMemberInfo(memberId)
+        return ResponseEntity.ok(ApiResponse.onSuccess(memberInfo))
     }
 }

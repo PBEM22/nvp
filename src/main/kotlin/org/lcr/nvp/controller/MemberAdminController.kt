@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.lcr.nvp.domain.attendance.application.AttendanceService
+import org.lcr.nvp.domain.attendance.dto.MemberAttendanceHistoryResponse
 import org.lcr.nvp.domain.member.application.MemberAdminService
 import org.lcr.nvp.domain.member.dto.AssignPositionRequest
 import org.lcr.nvp.domain.member.dto.MemberDetailResponse
@@ -26,7 +28,8 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/api/admin")
 class MemberAdminController(
-    private val memberAdminService: MemberAdminService
+    private val memberAdminService: MemberAdminService,
+    private val attendanceService: AttendanceService
 ) {
 
     @Operation(summary = "엑셀 파일로 회원 일괄 등록/수정", description = "엑셀 파일을 업로드하여 다수의 회원을 시스템에 등록하거나 활동 기수/직책을 업데이트합니다.")
@@ -76,6 +79,16 @@ class MemberAdminController(
     ): ResponseEntity<ApiResponse<MemberDetailResponse>> {
         val memberDetails = memberAdminService.getMemberDetails(memberId)
         return ResponseEntity.ok(ApiResponse.onSuccess(memberDetails))
+    }
+
+    @Operation(summary = "특정 회원의 출석 기록 전체 조회", description = "특정 회원의 전체 출석 기록을 최신순으로 조회합니다.")
+    @GetMapping("/members/{memberId}/attendance")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    fun getMemberAttendanceHistory(
+        @Parameter(description = "출석 기록을 조회할 회원의 memberId") @PathVariable memberId: Long
+    ): ResponseEntity<ApiResponse<List<MemberAttendanceHistoryResponse>>> {
+        val history = attendanceService.getMemberAttendanceHistory(memberId)
+        return ResponseEntity.ok(ApiResponse.onSuccess(history))
     }
 
     @Operation(summary = "회원 자격 상태 변경", description = "특정 회원의 자격 상태를 변경합니다. (e.g., ACTIVE_MEMBER, ALUMNI)")
