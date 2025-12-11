@@ -1,30 +1,25 @@
 package org.lcr.nvp.controller
 
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.lcr.nvp.domain.attendance.application.AttendanceService
 import org.lcr.nvp.domain.attendance.dto.GroupedMyAttendanceResponse
-import org.lcr.nvp.domain.match.application.ScoreRecordService
-import org.lcr.nvp.domain.match.dto.ScoreRecordResponse
 import org.lcr.nvp.domain.member.application.MemberService
 import org.lcr.nvp.domain.member.dto.MemberDetailResponse
 import org.lcr.nvp.global.common.ApiResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
 
-@Tag(name = "회원 API", description = "회원 관련 정보 조회 API")
+@Tag(name = "회원 API", description = "인증된 회원 자신의 정보 관련 API")
 @RestController
-@RequestMapping("/api/v1/members")
+@RequestMapping("/api/members")
 class MemberController(
     private val memberService: MemberService,
-    private val attendanceService: AttendanceService,
-    private val scoreRecordService: ScoreRecordService
+    private val attendanceService: AttendanceService
 ) {
 
     @Operation(summary = "내 정보 상세 조회", description = "로그인된 사용자의 상세 정보와 역대 활동 이력을 조회합니다.")
@@ -41,24 +36,5 @@ class MemberController(
     fun getMyAttendance(principal: Principal): ResponseEntity<ApiResponse<GroupedMyAttendanceResponse>> {
         val myAttendance = attendanceService.getMyAttendance(principal.name)
         return ResponseEntity.ok(ApiResponse.onSuccess(myAttendance))
-    }
-
-    @Operation(summary = "내 통산 기록 조회 (마이페이지용)", description = "로그인된 사용자 본인의 통산 기록을 조회합니다.")
-    @GetMapping("/me/score-record")
-    @PreAuthorize("isAuthenticated()")
-    fun getMyScoreRecord(principal: Principal): ResponseEntity<ApiResponse<ScoreRecordResponse>> {
-        val scoreRecord = scoreRecordService.getMyScoreRecord(principal.name)
-        val response = ScoreRecordResponse.from(scoreRecord)
-        return ResponseEntity.ok(ApiResponse.onSuccess(response))
-    }
-
-    @Operation(summary = "특정 회원 통산 기록 조회 (공개용)", description = "특정 회원의 모든 경기 기록을 합산한 통산 스탯(성공률, 효율 포함)을 조회합니다.")
-    @GetMapping("/{memberId}/score-record")
-    fun getMemberScoreRecord(
-        @Parameter(description = "조회할 회원의 ID") @PathVariable memberId: Long
-    ): ResponseEntity<ApiResponse<ScoreRecordResponse>> {
-        val scoreRecord = scoreRecordService.getScoreRecordByMember(memberId)
-        val response = ScoreRecordResponse.from(scoreRecord)
-        return ResponseEntity.ok(ApiResponse.onSuccess(response))
     }
 }

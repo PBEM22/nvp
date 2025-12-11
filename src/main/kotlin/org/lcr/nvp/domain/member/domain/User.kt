@@ -30,9 +30,6 @@ class User(
     @Column(name = "login_type", nullable = false)
     val loginType: String,
 
-    @Column(unique = true)
-    val providerId: String? = null,
-
     @Column(nullable = false)
     var status: String = "ACTIVE",
 

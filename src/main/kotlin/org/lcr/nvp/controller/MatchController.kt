@@ -5,15 +5,18 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.lcr.nvp.domain.match.application.MatchService
 import org.lcr.nvp.domain.match.dto.MatchCreateRequest
-import org.lcr.nvp.domain.match.dto.MatchDetailResponse
-import org.lcr.nvp.domain.match.dto.MatchPlayerSummaryResponse
-import org.lcr.nvp.domain.match.dto.MatchResponse
 import org.lcr.nvp.domain.match.dto.MatchResultUpdateRequest
 import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import org.lcr.nvp.domain.match.dto.MatchResponse // 응답 DTO 추가
+import org.springframework.web.bind.annotation.PathVariable
 
 @Tag(name = "경기 관리 API", description = "경기 생성, 조회, 수정 등 관리를 위한 API")
 @RestController
@@ -30,27 +33,13 @@ class MatchController(
             .body(ApiResponse.onSuccess(CreatedResponse(id = savedMatch.id!!)))
     }
 
-    @Operation(summary = "경기 결과 업데이트", description = "특정 경기의 승패, 최종 세트 스코어, 수상자 정보를 업데이트합니다.")
+    @Operation(summary = "경기 결과 업데이트", description = "특정 경기의 승패 및 최종 세트 스코어를 업데이트합니다.")
     @PutMapping("/{matchId}/result")
     fun updateMatchResult(
         @PathVariable matchId: Long,
         @Valid @RequestBody request: MatchResultUpdateRequest
     ): ResponseEntity<ApiResponse<MatchResponse>> {
-        val matchResponse = matchService.updateMatchResult(matchId, request)
-        return ResponseEntity.ok(ApiResponse.onSuccess(matchResponse))
-    }
-
-    @Operation(summary = "경기 상세 정보 조회", description = "특정 경기의 상세 정보, 수상자, 참여 선수의 통산 기록을 모두 조회합니다.")
-    @GetMapping("/{matchId}/details")
-    fun getMatchDetails(@PathVariable matchId: Long): ResponseEntity<ApiResponse<MatchDetailResponse>> {
-        val response = matchService.getMatchDetails(matchId)
-        return ResponseEntity.ok(ApiResponse.onSuccess(response))
-    }
-
-    @Operation(summary = "특정 경기 선수별 요약 기록 조회", description = "특정 경기에 참여한 모든 선수들의 핵심 스탯(총득점, 성공률 등)을 조회합니다.")
-    @GetMapping("/{matchId}/records")
-    fun getMatchPlayerRecords(@PathVariable matchId: Long): ResponseEntity<ApiResponse<List<MatchPlayerSummaryResponse>>> {
-        val records = matchService.getMatchPlayerRecords(matchId)
-        return ResponseEntity.ok(ApiResponse.onSuccess(records))
+        val updatedMatch = matchService.updateMatchResult(matchId, request)
+        return ResponseEntity.ok(ApiResponse.onSuccess(MatchResponse.from(updatedMatch)))
     }
 }

@@ -34,9 +34,6 @@ class MatchRecordService(
         isWin: Boolean,
         teamScore: Int,
         opponentScore: Int,
-        mvpMemberId: Long?,
-        spikerMemberId: Long?,
-        defenderMemberId: Long?,
         inputStream: InputStream
     ) {
         val match = matchRepository.findById(matchId)
@@ -52,13 +49,16 @@ class MatchRecordService(
             val member = memberRepository.findByBackNumberAndUser_Name(backNumber, playerName)
                 ?: throw NoSuchElementException("선수를 찾을 수 없습니다: 등번호 ${backNumber}, 이름 ${playerName}")
 
+            // 이 경기에 해당 선수의 기록이 DB에 하나도 없는지 확인
             val isFirstParticipationInMatch = !matchRecordRepository.existsByMemberAndMatch(member, match)
 
             if (isFirstParticipationInMatch) {
                 val scoreRecord = scoreRecordRepository.findByMember(member) ?: ScoreRecord(member = member)
                 
+                // 1. 총 출전 경기 수 1 증가
                 scoreRecord.matchesPlayed += 1
 
+                // 2. 이 대회에 처음 출전하는 것인지 확인 후, 총 출전 대회 수 1 증가
                 val isFirstParticipationInTournament = !matchRecordRepository.existsByMemberAndMatch_Tournament(member, match.tournament)
                 if (isFirstParticipationInTournament) {
                     scoreRecord.tournamentsPlayed += 1
@@ -130,14 +130,11 @@ class MatchRecordService(
             scoreRecordRepository.save(scoreRecord)
         }
 
-        // --- 경기 최종 결과 업데이트 (Stage 3) ---
+        // 경기 최종 결과 업데이트
         val resultRequest = MatchResultUpdateRequest(
             isWin = isWin,
             teamScore = teamScore,
-            opponentScore = opponentScore,
-            mvpMemberId = mvpMemberId,
-            spikerMemberId = spikerMemberId,
-            defenderMemberId = defenderMemberId
+            opponentScore = opponentScore
         )
         matchService.updateMatchResult(matchId, resultRequest)
     }

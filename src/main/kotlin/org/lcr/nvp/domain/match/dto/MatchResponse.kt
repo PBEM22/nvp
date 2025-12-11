@@ -1,57 +1,23 @@
 package org.lcr.nvp.domain.match.dto
 
-import io.swagger.v3.oas.annotations.media.Schema
 import org.lcr.nvp.domain.match.domain.Match
-import org.lcr.nvp.domain.member.domain.Member
 import java.time.LocalDate
 
-@Schema(description = "경기 정보 응답 DTO")
 data class MatchResponse(
     val id: Long,
     val tournamentName: String,
-    val opponentDisplayName: String,
+    val opponentDisplayName: String, // opponentSchoolName -> opponentDisplayName
     val isMale: Boolean,
     val isWin: Boolean,
     val teamScore: Int,
     val opponentScore: Int,
-    val matchMvp: AwardInfo?,
-    val bestSpiker: AwardInfo?,
-    val bestDefender: AwardInfo?,
+    val matchMvp: String?,
     val matchLocation: String?,
     val matchDate: LocalDate?
 ) {
-    @Schema(description = "수상자 정보")
-    data class AwardInfo(
-        @Schema(description = "수상자 memberId")
-        val memberId: Long,
-        @Schema(description = "수상자 이름")
-        val playerName: String,
-        @Schema(description = "수상자 등번호")
-        val backNumber: Int?,
-        @Schema(description = "선정 이유")
-        val reason: String
-    )
-
     companion object {
-        fun from(match: Match, awardMembers: Map<Long, Member>): MatchResponse {
+        fun from(match: Match): MatchResponse {
             val opponentDisplayName = "${match.opponentSchool.schoolName} (${match.opponentSchool.teamName})"
-            
-            val mvpInfo = match.mvpMemberId?.let { memberId ->
-                awardMembers[memberId]?.let { member ->
-                    AwardInfo(memberId, member.user.name!!, member.backNumber, match.mvpReason ?: "")
-                }
-            }
-            val spikerInfo = match.spikerMemberId?.let { memberId ->
-                awardMembers[memberId]?.let { member ->
-                    AwardInfo(memberId, member.user.name!!, member.backNumber, match.spikerReason ?: "")
-                }
-            }
-            val defenderInfo = match.defenderMemberId?.let { memberId ->
-                awardMembers[memberId]?.let { member ->
-                    AwardInfo(memberId, member.user.name!!, member.backNumber, match.defenderReason ?: "")
-                }
-            }
-
             return MatchResponse(
                 id = match.id!!,
                 tournamentName = match.tournament.tournamentName,
@@ -60,9 +26,7 @@ data class MatchResponse(
                 isWin = match.isWin,
                 teamScore = match.teamScore,
                 opponentScore = match.opponentScore,
-                matchMvp = mvpInfo,
-                bestSpiker = spikerInfo,
-                bestDefender = defenderInfo,
+                matchMvp = match.matchMvp,
                 matchLocation = match.matchLocation,
                 matchDate = match.matchDate
             )

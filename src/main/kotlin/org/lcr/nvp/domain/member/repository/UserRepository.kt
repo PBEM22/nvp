@@ -6,7 +6,11 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface UserRepository : JpaRepository<User, Long> {
-    fun findByEmail(email: String): User?
-    fun findByProviderId(providerId: String): User?
-}
 
+    /**
+     * 이메일로 사용자를 조회합니다.
+     * @param email 사용자 이메일
+     * @return User 엔티티 (없으면 null)
+     */
+    fun findByEmail(email: String): User?
+}
