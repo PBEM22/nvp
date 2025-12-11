@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ScoreRecordRepository : JpaRepository<ScoreRecord, Long> {
     fun findByMember(member: Member): ScoreRecord?
+    fun findByMemberIn(members: List<Member>): List<ScoreRecord>
 }
