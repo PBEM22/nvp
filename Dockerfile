@@ -1,8 +1,10 @@
 FROM gradle:9.2.1-jdk21 AS build
 WORKDIR /home/gradle/project
 
-COPY build.gradle settings.gradle ./
+COPY gradlew build.gradle settings.gradle ./
 COPY gradle ./gradle
+
+RUN chmod +x ./gradlew
 
 RUN ./gradlew dependencies --no-daemon
 
