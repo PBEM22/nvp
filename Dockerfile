@@ -10,7 +10,7 @@ COPY src ./src
 
 RUN ./gradlew bootJar --no-daemon
 
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre-focal
 WORKDIR /app
 
 COPY --from=build /home/gradle/project/build/libs/*.jar app.jar
