@@ -1,11 +1,13 @@
 package org.lcr.nvp.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.lcr.nvp.domain.attendance.application.AttendanceService
+import org.lcr.nvp.domain.attendance.dto.PeriodMemberAttendanceSummaryResponse
 import org.lcr.nvp.domain.member.application.PeriodService
 import org.lcr.nvp.domain.member.dto.CreatePeriodRequest
-import org.lcr.nvp.domain.member.dto.PeriodResponse
 import org.lcr.nvp.domain.member.dto.UpdatePeriodRequest
 import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
@@ -17,10 +19,20 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "운영진 기수 관리 API", description = "운영진이 기수(Period)를 관리하는 API")
 @RestController
 @RequestMapping("/api/admin/periods")
-@PreAuthorize("hasRole('ROLE_ADMIN')") // 이 컨트롤러의 모든 기능은 총괄 관리자(ADMIN)만 가능
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
 class PeriodAdminController(
-    private val periodService: PeriodService
+    private val periodService: PeriodService,
+    private val attendanceService: AttendanceService
 ) {
+
+    @Operation(summary = "[ADMIN] 기수별 출석 현황 전체 조회", description = "특정 기수에 속한 모든 회원의 출석 현황(총 출석, 지각, 결석, 출석률 등)을 조회합니다.")
+    @GetMapping("/{periodId}/attendance")
+    fun getAttendanceSummaryByPeriod(
+        @Parameter(description = "조회할 기수의 ID") @PathVariable periodId: Long
+    ): ResponseEntity<ApiResponse<List<PeriodMemberAttendanceSummaryResponse>>> {
+        val response = attendanceService.getAttendanceSummaryByPeriod(periodId)
+        return ResponseEntity.ok(ApiResponse.onSuccess(response))
+    }
 
     @Operation(summary = "[ADMIN] 기수 생성", description = "새로운 기수 정보를 시스템에 등록합니다.")
     @PostMapping

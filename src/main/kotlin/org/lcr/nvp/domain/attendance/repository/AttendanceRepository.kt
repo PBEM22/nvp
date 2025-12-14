@@ -17,4 +17,6 @@ interface AttendanceRepository : JpaRepository<Attendance, Long> {
 
     @Query("SELECT a FROM Attendance a JOIN FETCH a.exerciseDate WHERE a.member = :member ORDER BY a.exerciseDate.date DESC")
     fun findByMemberWithExerciseDate(@Param("member") member: Member): List<Attendance>
+
+    fun findAllByMemberInAndExerciseDateIn(members: List<Member>, exerciseDates: List<ExerciseDate>): List<Attendance>
 }

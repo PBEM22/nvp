@@ -15,6 +15,8 @@ data class MatchDetailResponse(
     val tournamentName: String,
     @Schema(description = "상대팀 이름 (학교 포함)")
     val opponentDisplayName: String,
+    @Schema(description = "남자부 경기 여부 (true: 남자부, false: 여자부)")
+    val isMale: Boolean,
     @Schema(description = "승리 여부")
     val isWin: Boolean,
     @Schema(description = "우리 팀 세트 스코어")
@@ -39,6 +41,7 @@ data class MatchDetailResponse(
                 matchDate = match.matchDate,
                 tournamentName = match.tournament.tournamentName,
                 opponentDisplayName = "${match.opponentSchool.schoolName} (${match.opponentSchool.teamName})",
+                isMale = match.isMale,
                 isWin = match.isWin,
                 teamScore = match.teamScore,
                 opponentScore = match.opponentScore,

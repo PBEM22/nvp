@@ -9,8 +9,8 @@ import kotlin.math.roundToInt
 data class MatchPlayerSummaryResponse(
     @Schema(description = "선수 고유 ID", example = "1")
     val memberId: Long,
-    @Schema(description = "선수 이름", example = "김선수")
-    val playerName: String,
+    @Schema(description = "선수 이름", example = "김선수", nullable = true)
+    val playerName: String?,
     @Schema(description = "등번호", example = "10")
     val backNumber: Int?,
     @Schema(description = "해당 경기에서 출전한 총 세트 수", example = "3")
@@ -25,6 +25,8 @@ data class MatchPlayerSummaryResponse(
     val digSuccess: Int,
     @Schema(description = "블로킹 성공 수")
     val blockSuccess: Int,
+    @Schema(description = "서브 득점 수")
+    val serveSuccess: Int,
 
     // 주요 성공률 및 효율
     @Schema(description = "공격 성공률 (%)")
@@ -74,13 +76,14 @@ data class MatchPlayerSummaryResponse(
             val totalReceiveError = records.sumOf { it.receiveError }
             val totalBlockSuccess = records.sumOf { it.blockSuccess }
             val totalServeAttempt = records.sumOf { it.serveAttempt }
+            val totalServeAce = records.sumOf { it.serveAce }
             val totalServeError = records.sumOf { it.serveError }
             val totalDigSuccess = records.sumOf { it.digSuccess }
 
 
             return MatchPlayerSummaryResponse(
                 memberId = member.id!!,
-                playerName = member.user.name!!,
+                playerName = member.user.name,
                 backNumber = member.backNumber,
                 setsPlayed = setsPlayed,
                 totalScore = totalScore,
@@ -88,13 +91,14 @@ data class MatchPlayerSummaryResponse(
                 attackSuccess = totalAttackSuccess,
                 digSuccess = totalDigSuccess,
                 blockSuccess = totalBlockSuccess,
+                serveSuccess = totalServeAce,
 
                 attackSuccessRate = calculateRate(totalAttackSuccess, totalAttackAttempt),
                 attackEfficiency = calculateEfficiency(totalAttackSuccess - totalAttackError - totalAttackBlock, totalAttackAttempt),
                 receiveSuccessRate = calculateRate(totalReceivePerfect, totalReceiveAttempt),
                 receiveEfficiency = calculateEfficiency(totalReceivePerfect - totalReceiveError, totalReceiveAttempt),
                 blockAvgPerSet = calculateAvgPerSet(totalBlockSuccess, setsPlayed),
-                serveSuccessRate = calculateRate(totalServeAttempt - totalServeError, totalServeAttempt)
+                serveSuccessRate = calculateRate(totalServeAce, totalServeAttempt)
             )
         }
     }

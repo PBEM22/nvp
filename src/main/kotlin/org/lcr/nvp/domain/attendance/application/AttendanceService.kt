@@ -192,6 +192,81 @@ class AttendanceService(
         }
     }
 
+    @Transactional(readOnly = true)
+    fun getAttendanceSummaryByPeriod(periodId: Long): List<PeriodMemberAttendanceSummaryResponse> {
+        // 1. 기수 정보 조회
+        val period = periodRepository.findById(periodId)
+            .orElseThrow { PeriodNotFoundException() }
+
+        // 2. 해당 기수에 속한 모든 회원 조회
+        val membersInPeriod = memberAssignmentRepository.findAllByPeriodWithMember(period)
+            .map { it.member }
+            .distinctBy { it.id }
+
+        if (membersInPeriod.isEmpty()) {
+            return emptyList()
+        }
+
+        // 3. 해당 기수의 기간(연도, 학기)에 해당하는 모든 운동일 조회
+        val startMonth = if (period.semester == 1) 1 else 7
+        val endMonth = if (period.semester == 1) 6 else 12
+        val exerciseDatesInPeriod = exerciseDateRepository.findByYearAndSemester(period.year, startMonth, endMonth)
+
+        if (exerciseDatesInPeriod.isEmpty()) {
+            // 운동일이 없으면 모든 회원의 출석률은 0%
+            return membersInPeriod.map { member ->
+                PeriodMemberAttendanceSummaryResponse(
+                    memberId = member.id,
+                    memberName = member.user.name,
+                    totalExerciseDays = 0, presentDays = 0, lateDays = 0, earlyLeaveDays = 0, absentDays = 0, attendanceRate = 0.0
+                )
+            }
+        }
+
+        // 4. 해당 회원들과 운동일에 대한 모든 출석 기록을 한 번에 조회
+        val attendances = attendanceRepository.findAllByMemberInAndExerciseDateIn(membersInPeriod, exerciseDatesInPeriod)
+        val attendancesByMemberId = attendances.groupBy { it.member.id }
+
+        // 5. 회원별로 출석 요약 계산
+        return membersInPeriod.map { member ->
+            val memberAttendances = attendancesByMemberId[member.id] ?: emptyList()
+
+            var present = 0
+            var late = 0
+            var earlyLeave = 0
+
+            memberAttendances.forEach { attendance ->
+                when {
+                    attendance.round1Status == AttendanceStatus.PRESENT && attendance.round2Status == AttendanceStatus.PRESENT -> present++
+                    attendance.round1Status == AttendanceStatus.ABSENT && attendance.round2Status == AttendanceStatus.PRESENT -> late++
+                    attendance.round1Status == AttendanceStatus.PRESENT && attendance.round2Status == AttendanceStatus.ABSENT -> earlyLeave++
+                }
+            }
+
+            val totalExerciseDays = exerciseDatesInPeriod.size
+            val absent = totalExerciseDays - memberAttendances.size + (memberAttendances.size - (present + late + earlyLeave))
+
+            val attendanceRate = if (totalExerciseDays > 0) {
+                (BigDecimal(present + late + earlyLeave) / BigDecimal(totalExerciseDays) * BigDecimal(100))
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .toDouble()
+            } else {
+                0.0
+            }
+
+            PeriodMemberAttendanceSummaryResponse(
+                memberId = member.id,
+                memberName = member.user.name,
+                totalExerciseDays = totalExerciseDays,
+                presentDays = present,
+                lateDays = late,
+                earlyLeaveDays = earlyLeave,
+                absentDays = absent,
+                attendanceRate = attendanceRate
+            )
+        }
+    }
+
     /**
      * 회원 본인의 출석률 및 상세 내역을 기수별로 그룹화하여 조회합니다.
      */

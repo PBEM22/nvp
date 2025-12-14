@@ -57,8 +57,8 @@ class MatchService(
 
     @Transactional
     fun updateMatchResult(matchId: Long, request: MatchResultUpdateRequest): MatchResponse {
-        val match = matchRepository.findById(matchId)
-            .orElseThrow { NoSuchElementException("ID가 ${matchId}인 경기를 찾을 수 없습니다.") }
+        val match = matchRepository.findByIdAndDeletedAtIsNull(matchId)
+            .orElseThrow { BusinessException(ErrorCode.MATCH_NOT_FOUND) }
 
         // 기본 경기 결과 업데이트
         match.isWin = request.isWin
@@ -160,9 +160,9 @@ class MatchService(
 
     @Transactional(readOnly = true)
     fun getMatchDetails(matchId: Long): MatchDetailResponse {
-        // 1. 기본 경기 정보 조회
-        val match = matchRepository.findById(matchId)
-            .orElseThrow { NoSuchElementException("ID가 ${matchId}인 경기를 찾을 수 없습니다.") }
+        // 1. 기본 경기 정보 조회 (삭제된 경기는 제외)
+        val match = matchRepository.findByIdAndDeletedAtIsNull(matchId)
+            .orElseThrow { BusinessException(ErrorCode.MATCH_NOT_FOUND) }
 
         // 2. 해당 경기의 수상자 정보 조회
         val awardMemberIds = listOfNotNull(match.mvpMemberId, match.spikerMemberId, match.defenderMemberId)
@@ -186,8 +186,8 @@ class MatchService(
 
     @Transactional(readOnly = true)
     fun getMatchPlayerRecords(matchId: Long): List<MatchPlayerSummaryResponse> {
-        val match = matchRepository.findById(matchId)
-            .orElseThrow { NoSuchElementException("ID가 ${matchId}인 경기를 찾을 수 없습니다.") }
+        val match = matchRepository.findByIdAndDeletedAtIsNull(matchId)
+            .orElseThrow { BusinessException(ErrorCode.MATCH_NOT_FOUND) }
 
         val allRecordsInMatch = matchRecordRepository.findByMatch(match)
         val recordsByMember = allRecordsInMatch.groupBy { it.member }
@@ -214,6 +214,13 @@ class MatchService(
         }
         val matches = matchRepository.findMatchesByTournamentIdWithDetails(tournamentId)
         return matches.map { MemberMatchResponse.from(it) }
+    }
+
+    @Transactional
+    fun deleteMatch(matchId: Long) {
+        val match = matchRepository.findById(matchId)
+            .orElseThrow { BusinessException(ErrorCode.MATCH_NOT_FOUND) }
+        match.softDelete()
     }
 
     private fun calculateEfficiency(numerator: Int, denominator: Int): Double {

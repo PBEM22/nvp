@@ -17,7 +17,7 @@ data class BoardSummaryResponse(
     @Schema(description = "작성자 이름", example = "김엔비", nullable = true)
     val authorName: String?,
     @Schema(description = "작성일시")
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime?
 )
 
 /**
@@ -36,8 +36,8 @@ data class BoardDetailResponse(
     @Schema(description = "작성자 이름", example = "김엔비", nullable = true)
     val authorName: String?,
     @Schema(description = "작성일시")
-    val createdAt: LocalDateTime,
+    val createdAt: LocalDateTime?,
     @Schema(description = "최종 수정일시")
-    val updatedAt: LocalDateTime
+    val updatedAt: LocalDateTime?
     // TODO: 댓글 기능 구현 시, 댓글 목록(List<CommentResponse>) 추가
 )

@@ -54,3 +54,6 @@ data.sql
 *.pdf
 *.xlsx
 *.csv
+
+### DOCKER-COMPOSE ###
+docker-compose.yml

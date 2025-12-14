@@ -1,6 +1,7 @@
 package org.lcr.nvp.domain.match.domain
 
 import jakarta.persistence.*
+import org.lcr.nvp.global.common.BaseTimeEntity
 
 @Entity
 @Table(name = "tournaments")
@@ -11,8 +12,8 @@ class Tournament(
     val id: Long? = null,
 
     @Column(nullable = false)
-    val tournamentName: String,
+    var tournamentName: String,
 
     @Column(nullable = false)
-    val isSixPlayer: Boolean = false
-)
+    var isSixPlayer: Boolean = false
+) : BaseTimeEntity()

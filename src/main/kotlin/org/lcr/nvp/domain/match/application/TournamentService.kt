@@ -3,10 +3,14 @@ package org.lcr.nvp.domain.match.application
 import org.lcr.nvp.domain.match.domain.Tournament
 import org.lcr.nvp.domain.match.dto.TournamentCreateRequest
 import org.lcr.nvp.domain.match.repository.MatchRecordRepository
+import org.lcr.nvp.domain.match.repository.MatchRepository
 import org.lcr.nvp.domain.match.repository.TournamentRepository
 import org.lcr.nvp.domain.member.domain.User
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
+import org.lcr.nvp.global.exception.BusinessException
+import org.lcr.nvp.global.exception.ErrorCode
+import org.lcr.nvp.global.exception.domain.DataIntegrityViolationException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +21,8 @@ class TournamentService(
     private val tournamentRepository: TournamentRepository,
     private val userRepository: UserRepository,
     private val memberRepository: MemberRepository,
-    private val matchRecordRepository: MatchRecordRepository
+    private val matchRecordRepository: MatchRecordRepository,
+    private val matchRepository: MatchRepository
 ) {
 
     @Transactional
@@ -31,13 +36,13 @@ class TournamentService(
 
     @Transactional(readOnly = true)
     fun getTournamentById(tournamentId: Long): Tournament {
-        return tournamentRepository.findByIdOrNull(tournamentId)
-            ?: throw NoSuchElementException("ID가 ${tournamentId}인 대회를 찾을 수 없습니다.")
+        return tournamentRepository.findByIdAndDeletedAtIsNull(tournamentId)
+            .orElseThrow { BusinessException(ErrorCode.TOURNAMENT_NOT_FOUND) }
     }
 
     @Transactional(readOnly = true)
     fun getAllTournaments(): List<Tournament> {
-        return tournamentRepository.findAllByOrderByIdDesc()
+        return tournamentRepository.findAllActiveByOrderByIdDesc()
     }
 
     @Transactional(readOnly = true)
@@ -70,20 +75,20 @@ class TournamentService(
     @Transactional
     fun updateTournament(tournamentId: Long, request: TournamentCreateRequest): Tournament {
         val tournament = getTournamentById(tournamentId)
-        // DTO에 필드가 2개 뿐이라 전체 업데이트로 구현.
-        val updatedTournament = Tournament(
-            id = tournament.id,
-            tournamentName = request.tournamentName,
-            isSixPlayer = request.isSixPlayer
-        )
-        return tournamentRepository.save(updatedTournament)
+        tournament.tournamentName = request.tournamentName
+        tournament.isSixPlayer = request.isSixPlayer
+        return tournament // @Transactional에 의해 변경 감지(dirty checking)되어 자동 저장됨
     }
 
     @Transactional
     fun deleteTournament(tournamentId: Long) {
-        if (!tournamentRepository.existsById(tournamentId)) {
-            throw NoSuchElementException("ID가 ${tournamentId}인 대회를 찾을 수 없습니다.")
+        val tournament = getTournamentById(tournamentId)
+
+        // 해당 대회에 속한 경기가 있는지 확인
+        if (matchRepository.existsByTournament(tournament)) {
+            throw DataIntegrityViolationException("해당 대회에 속한 경기가 있어 삭제할 수 없습니다.")
         }
-        tournamentRepository.deleteById(tournamentId)
+
+        tournament.softDelete()
     }
 }

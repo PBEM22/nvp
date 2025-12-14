@@ -34,7 +34,7 @@ data class CommentResponse(
     @Schema(description = "댓글 내용", example = "좋은 글 감사합니다.")
     val content: String,
     @Schema(description = "작성일시")
-    val createdAt: LocalDateTime,
+    val createdAt: LocalDateTime?,
     @Schema(description = "삭제 여부", example = "false")
     val isDeleted: Boolean,
     @Schema(description = "대댓글 목록")

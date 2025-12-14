@@ -27,14 +27,33 @@ class MemberAdminService(
     private val roleMappingRepository: RoleMappingRepository
 ) {
 
-    fun getAllMembers(pageable: Pageable): Page<MemberSummaryResponse> {
-        return memberRepository.findAll(pageable).map { member ->
-            MemberSummaryResponse(
+    fun getAllMembers(pageable: Pageable): Page<MemberInfoResponse> {
+        val memberPage = memberRepository.findAll(pageable)
+        val members = memberPage.content
+
+        if (members.isEmpty()) {
+            return Page.empty(pageable)
+        }
+
+        // 한 번의 쿼리로 모든 회원의 활동 이력을 가져옴 (회원ID, 기간순으로 정렬되어 있음)
+        val assignments = memberAssignmentRepository.findAllByMemberInWithDetails(members)
+        // 각 회원 ID별로 활동 이력 목록을 그룹화
+        val assignmentsByMemberId = assignments.groupBy { it.member.id }
+
+        return memberPage.map { member ->
+            // 정렬된 목록에서 첫 번째(가장 최신) 활동 이력을 가져옴
+            val latestAssignment = assignmentsByMemberId[member.id]?.firstOrNull()
+            MemberInfoResponse(
                 memberId = member.id,
-                userId = member.user.id,
-                email = member.user.email,
                 name = member.user.name,
-                membershipStatus = member.membershipStatus
+                backNumber = member.backNumber,
+                major = member.major,
+                membershipStatus = member.membershipStatus,
+                periodNumber = latestAssignment?.period?.periodNumber,
+                periodYear = latestAssignment?.period?.year,
+                departmentName = latestAssignment?.department?.name,
+                positionName = latestAssignment?.position?.name,
+                displayName = latestAssignment?.displayName
             )
         }
     }
@@ -132,11 +151,20 @@ class MemberAdminService(
                 val user = userRepository.findByEmail(email)
                     ?: throw UserNotFoundException()
 
+                // 탈퇴했던 회원인 경우, 계정 부활 처리
+                if (user.deletedAt != null) {
+                    user.unDelete()
+                    user.status = "ACTIVE"
+                    memberRepository.findByUser(user)?.apply {
+                        this.unDelete()
+                        this.membershipStatus = "ACTIVE_MEMBER"
+                    }
+                }
+
                 // 엑셀 파일의 이름으로 사용자 이름 업데이트
                 val nameStr = getCellData("name")
                 if (nameStr.isNotBlank() && user.name != nameStr) {
                     user.name = nameStr
-                    userRepository.save(user)
                 }
 
                 val member = memberRepository.findByUser(user) ?: memberRepository.save(Member(user = user))
@@ -166,10 +194,20 @@ class MemberAdminService(
                 val period = periodRepository.findByPeriodNumber(periodNumberStr.toInt())
                     ?: throw PeriodNotFoundException()
 
-                if (!memberAssignmentRepository.existsWithDetails(member, department, position, period)) {
-                    val roleMapping = roleMappingRepository.findByDepartmentAndPosition(department, position)
-                        ?: throw DataIntegrityViolationException("부서/직책에 대한 표시 이름 규칙이 정의되지 않았습니다: ${department.name}/${position.name}")
+                val roleMapping = roleMappingRepository.findByDepartmentAndPosition(department, position)
+                    ?: throw DataIntegrityViolationException("부서/직책에 대한 표시 이름 규칙이 정의되지 않았습니다: ${department.name}/${position.name}")
 
+                // 해당 기수(Period)에 대한 할당 정보가 이미 있는지 확인
+                val existingAssignment = memberAssignmentRepository.findByMemberAndPeriod(member, period)
+
+                if (existingAssignment != null) {
+                    // 이미 해당 기수에 대한 정보가 있으면, 부서와 직책, 표시이름을 덮어쓴다.
+                    existingAssignment.department = department
+                    existingAssignment.position = position
+                    existingAssignment.displayName = roleMapping.displayName
+                    memberAssignmentRepository.save(existingAssignment)
+                } else {
+                    // 해당 기수에 대한 정보가 없으면, 새로 추가한다.
                     memberAssignmentRepository.save(
                         MemberAssignment(
                             member = member,
@@ -191,6 +229,18 @@ class MemberAdminService(
         }
 
         return "엑셀 처리 완료. 총 ${successCount + failCount}건 중 성공: $successCount 건, 실패: $failCount 건. 실패 상세: $errorDetails"
+    }
+
+    @Transactional
+    fun withdrawMemberById(memberId: Long) {
+        val member = memberRepository.findById(memberId)
+            .orElseThrow { MemberNotFoundException() }
+        val user = member.user
+
+        user.softDelete()
+        member.softDelete()
+        member.membershipStatus = "WITHDRAWN"
+        user.status = "WITHDRAWN" // User의 상태도 변경
     }
 
     @Transactional
@@ -219,6 +269,18 @@ class MemberAdminService(
             .orElseThrow { MemberNotFoundException() }
 
         member.membershipStatus = newStatus
+    }
+
+    @Transactional
+    fun updateUserAccountStatus(userId: Long, newStatus: String) {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+
+        // 간단한 유효성 검사. 실제로는 Enum 등으로 관리하는 것이 더 좋음.
+        if (newStatus !in listOf("ACTIVE", "SUSPENDED")) {
+            throw InvalidInputValueException()
+        }
+        user.status = newStatus
     }
 
     @Transactional

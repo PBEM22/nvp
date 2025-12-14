@@ -56,7 +56,6 @@ class SecurityConfig(
                         "/api/auth/**"
                     ).permitAll()
                     .requestMatchers(
-                        HttpMethod.GET,
                         "/api/v1/members/{memberId:[0-9]+}",
                         "/api/v1/members/{memberId:[0-9]+}/score-record",
                         "/api/v1/members/{memberId:[0-9]+}/matches",
@@ -70,7 +69,9 @@ class SecurityConfig(
                         "/api/v1/opponent-schools/{schoolId:[0-9]+}",
                         "/api/boards",
                         "/api/boards/{boardId:[0-9]+}",
-                        "/api/boards/{boardId:[0-9]+}/comments"
+                        "/api/boards/{boardId:[0-9]+}/comments",
+                        "/api/v1/**",
+                        "/api/v1/auth/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             }
