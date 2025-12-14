@@ -51,6 +51,9 @@ class MemberRepositoryCustomImpl(
         val conditions = mutableListOf<String>()
         val parameters = mutableMapOf<String, Any>()
 
+        // 공개용 API에서는 항상 탈퇴하지 않은 회원만 조회
+        conditions.add("m.deletedAt IS NULL")
+
         filter.year?.let {
             conditions.add("p.year = :year")
             parameters["year"] = it
@@ -72,7 +75,7 @@ class MemberRepositoryCustomImpl(
             parameters["keyword"] = "%$it%"
         }
 
-        val whereClause = if (conditions.isNotEmpty()) "WHERE ${conditions.joinToString(" AND ")}" else ""
+        val whereClause = "WHERE ${conditions.joinToString(" AND ")}"
         return Pair(whereClause, parameters)
     }
 }

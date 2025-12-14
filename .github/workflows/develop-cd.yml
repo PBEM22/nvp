@@ -1,0 +1,65 @@
+name: develop-cd
+
+on:
+  pull_request:
+    types: [closed] # Merge된 경우만 실행
+    branches: [develop]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+
+jobs:
+  image-build:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: application.yml 추가
+        run: |
+          mkdir -p ./src/main/resources
+          echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+
+      - name: Docker Hub 로그인
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Docker 이미지 빌드 및 푸시
+        run: |
+          # Dockerfile 내부에서 빌드를 수행하므로 chmod +x gradlew만 실행
+          chmod +x gradlew
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_NAME }}:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_NAME }}:latest
+
+  deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: [ image-build ]
+    steps:
+      - name: 도커 컴포즈 배포
+        uses: appleboy/ssh-action@master
+        with:
+          username: ubuntu
+          host: ${{ secrets.SERVER_IP }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd /home/ubuntu/ 
+
+            echo ${{ secrets.DOCKER_TOKEN }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+            
+            sudo docker compose pull
+
+            sudo docker compose down
+            sudo docker compose up -d
+            
+            sudo docker image prune -f

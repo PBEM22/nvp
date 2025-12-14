@@ -110,6 +110,11 @@ class AuthService(
             throw BusinessException(ErrorCode.ACCOUNT_DEACTIVATED)
         }
 
+        // 정지된 회원인지 확인
+        if (user.status != "ACTIVE") {
+            throw BusinessException(ErrorCode.ACCOUNT_SUSPENDED)
+        }
+
         val member = memberRepository.findByUser(user)
         val roles = user.roles.map { it.roleName }
 

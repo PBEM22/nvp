@@ -7,13 +7,18 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.util.Optional
 
 @Repository
 interface MatchRepository : JpaRepository<Match, Long> {
 
-    @Query("SELECT m FROM Match m JOIN FETCH m.tournament JOIN FETCH m.opponentSchool WHERE m.tournament.id = :tournamentId ORDER BY m.matchDate DESC")
+    @Query("SELECT m FROM Match m JOIN FETCH m.tournament JOIN FETCH m.opponentSchool WHERE m.tournament.id = :tournamentId AND m.deletedAt IS NULL ORDER BY m.matchDate DESC")
     fun findMatchesByTournamentIdWithDetails(@Param("tournamentId") tournamentId: Long): List<Match>
 
-    @Query("SELECT DISTINCT m FROM Match m JOIN m.records r JOIN FETCH m.tournament JOIN FETCH m.opponentSchool WHERE r.member.id = :memberId ORDER BY m.matchDate DESC")
+    @Query("SELECT DISTINCT r.match FROM MatchRecord r JOIN FETCH r.match.tournament JOIN FETCH r.match.opponentSchool WHERE r.member.id = :memberId AND r.match.deletedAt IS NULL ORDER BY r.match.matchDate DESC")
     fun findDistinctMatchesByMemberIdWithDetails(@Param("memberId") memberId: Long): List<Match>
+
+    fun findByIdAndDeletedAtIsNull(id: Long): Optional<Match>
+
+    fun existsByTournament(tournament: Tournament): Boolean
 }

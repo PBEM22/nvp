@@ -19,6 +19,7 @@ enum class ErrorCode(
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "A002", "이메일 또는 비밀번호가 일치하지 않습니다."),
     ROLE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "A003", "기본 역할(ROLE_USER)을 찾을 수 없습니다."),
     ACCOUNT_DEACTIVATED(HttpStatus.FORBIDDEN, "A004", "탈퇴하여 비활성화된 계정입니다."),
+    ACCOUNT_SUSPENDED(HttpStatus.FORBIDDEN, "A005", "활동 정지된 계정입니다."),
 
     // Member
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "해당 사용자를 찾을 수 없습니다."),
@@ -39,6 +40,7 @@ enum class ErrorCode(
 
     // Match, Tournament, etc.
     TOURNAMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "MT01", "해당 대회를 찾을 수 없습니다."),
+    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "MT02", "해당 경기를 찾을 수 없습니다."),
 
     // Attendance
     ATTENDANCE_CODE_ALREADY_EXISTS(HttpStatus.CONFLICT, "AT01", "이미 유효한 출석 코드가 존재합니다."),

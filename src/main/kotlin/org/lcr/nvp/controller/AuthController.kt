@@ -22,7 +22,7 @@ import java.time.Duration
 
 @Tag(name = "인증 API", description = "사용자 회원가입, 로그인, 토큰 재발급 관련 API")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 class AuthController(
     private val authService: AuthService,
     private val cookieUtil: CookieUtil,

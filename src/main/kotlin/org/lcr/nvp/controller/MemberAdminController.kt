@@ -9,8 +9,9 @@ import org.lcr.nvp.domain.attendance.dto.MemberAttendanceHistoryResponse
 import org.lcr.nvp.domain.member.application.MemberAdminService
 import org.lcr.nvp.domain.member.dto.AssignPositionRequest
 import org.lcr.nvp.domain.member.dto.MemberDetailResponse
-import org.lcr.nvp.domain.member.dto.MemberSummaryResponse
+import org.lcr.nvp.domain.member.dto.MemberInfoResponse
 import org.lcr.nvp.domain.member.dto.UpdateMemberStatusRequest
+import org.lcr.nvp.domain.member.dto.UpdateUserAccountStatusRequest
 import org.lcr.nvp.domain.member.dto.UpdateUserRolesRequest
 import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
@@ -66,7 +67,7 @@ class MemberAdminController(
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun getAllMembers(
         @PageableDefault(sort = ["id"], direction = Sort.Direction.DESC) pageable: Pageable
-    ): ResponseEntity<ApiResponse<Page<MemberSummaryResponse>>> {
+    ): ResponseEntity<ApiResponse<Page<MemberInfoResponse>>> {
         val members = memberAdminService.getAllMembers(pageable)
         return ResponseEntity.ok(ApiResponse.onSuccess(members))
     }
@@ -81,6 +82,16 @@ class MemberAdminController(
         return ResponseEntity.ok(ApiResponse.onSuccess(memberDetails))
     }
 
+    @Operation(summary = "[운영진] 특정 회원 강제 탈퇴", description = "운영진이 특정 회원을 탈퇴(비활성) 처리합니다.")
+    @DeleteMapping("/members/{memberId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    fun withdrawMember(
+        @Parameter(description = "탈퇴시킬 회원의 memberId") @PathVariable memberId: Long
+    ): ResponseEntity<ApiResponse<Unit>> {
+        memberAdminService.withdrawMemberById(memberId)
+        return ResponseEntity.ok(ApiResponse.onSuccess())
+    }
+
     @Operation(summary = "특정 회원의 출석 기록 전체 조회", description = "특정 회원의 전체 출석 기록을 최신순으로 조회합니다.")
     @GetMapping("/members/{memberId}/attendance")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
@@ -91,14 +102,25 @@ class MemberAdminController(
         return ResponseEntity.ok(ApiResponse.onSuccess(history))
     }
 
-    @Operation(summary = "회원 자격 상태 변경", description = "특정 회원의 자격 상태를 변경합니다. (e.g., ACTIVE_MEMBER, ALUMNI)")
+    @Operation(summary = "회원 자격 상태 변경", description = "특정 회원의 동아리 내 자격 상태를 변경합니다. (e.g., ACTIVE_MEMBER, ALUMNI)")
     @PutMapping("/members/{memberId}/status")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
-    fun updateMemberStatus(
+    fun updateMembershipStatus(
         @Parameter(description = "상태를 변경할 회원의 memberId") @PathVariable memberId: Long,
         @Valid @RequestBody request: UpdateMemberStatusRequest
     ): ResponseEntity<ApiResponse<Unit>> {
         memberAdminService.updateMemberStatus(memberId, request.membershipStatus)
+        return ResponseEntity.ok(ApiResponse.onSuccess())
+    }
+
+    @Operation(summary = "사용자 계정 상태 변경", description = "특정 사용자의 계정 자체의 상태를 변경합니다. (e.g., ACTIVE, SUSPENDED)")
+    @PutMapping("/users/{userId}/status")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    fun updateUserAccountStatus(
+        @Parameter(description = "상태를 변경할 사용자의 userId") @PathVariable userId: Long,
+        @Valid @RequestBody request: UpdateUserAccountStatusRequest
+    ): ResponseEntity<ApiResponse<Unit>> {
+        memberAdminService.updateUserAccountStatus(userId, request.status)
         return ResponseEntity.ok(ApiResponse.onSuccess())
     }
 

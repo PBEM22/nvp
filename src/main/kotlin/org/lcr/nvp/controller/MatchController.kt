@@ -43,6 +43,14 @@ class MatchController(
         return ResponseEntity.ok(ApiResponse.onSuccess(matchResponse))
     }
 
+    @Operation(summary = "[운영진] 경기 삭제", description = "특정 경기를 삭제(비활성) 처리합니다. 경기 기록 및 통계는 보존됩니다.")
+    @DeleteMapping("/{matchId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    fun deleteMatch(@PathVariable matchId: Long): ResponseEntity<ApiResponse<Unit>> {
+        matchService.deleteMatch(matchId)
+        return ResponseEntity.ok(ApiResponse.onSuccess())
+    }
+
     @Operation(summary = "경기 상세 정보 조회", description = "특정 경기의 상세 정보, 수상자, 참여 선수의 경기 기록을 모두 조회합니다.")
     @GetMapping("/{matchId}/details")
     fun getMatchDetails(@PathVariable matchId: Long): ResponseEntity<ApiResponse<MatchDetailResponse>> {
