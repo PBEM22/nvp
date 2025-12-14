@@ -7,6 +7,7 @@ import org.lcr.nvp.domain.match.application.MatchRecordService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.net.URLEncoder
@@ -21,6 +22,7 @@ class MatchRecordController(
 
     @Operation(summary = "경기 기록 XLSX 템플릿 다운로드", description = "선수별 경기 기록을 입력하는 데 사용되는 XLSX 템플릿 파일을 다운로드합니다.")
     @GetMapping("/records/template")
+    @PreAuthorize("isAuthenticated()")
     fun downloadMatchRecordTemplate(): ResponseEntity<ByteArray> {
         val excelBytes = matchRecordService.downloadMatchRecordTemplate()
         val fileName = URLEncoder.encode("NVP_경기기록_템플릿.xlsx", StandardCharsets.UTF_8)
@@ -31,8 +33,9 @@ class MatchRecordController(
             .body(excelBytes)
     }
 
-    @Operation(summary = "경기 기록 XLSX 파일 업로드 및 결과 입력", description = "작성된 경기 기록 XLSX 파일을 업로드하고, 경기의 최종 결과를 함께 저장합니다.")
+    @Operation(summary = "[운영진] 경기 기록 XLSX 파일 업로드 및 결과 입력", description = "작성된 경기 기록 XLSX 파일을 업로드하고, 경기의 최종 결과를 함께 저장합니다.")
     @PostMapping("/{matchId}/records/upload", consumes = ["multipart/form-data"])
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun uploadMatchRecords(
         @Parameter(description = "기록을 추가할 경기의 ID") @PathVariable matchId: Long,
         @Parameter(description = "경기 승리 여부") @RequestParam("isWin") isWin: Boolean,

@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import org.lcr.nvp.domain.member.application.AuthService
 import org.lcr.nvp.domain.member.dto.AccessTokenResponse
+import org.lcr.nvp.domain.member.dto.EmailCheckResponse
 import org.lcr.nvp.domain.member.dto.LoginRequest
 import org.lcr.nvp.domain.member.dto.LoginResponse
 import org.lcr.nvp.domain.member.dto.SignupRequest
@@ -35,13 +36,20 @@ class AuthController(
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.onSuccess())
     }
 
-    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 토큰을 발급받습니다.")
+    @Operation(summary = "이메일 중복 확인", description = "회원가입 시 사용할 이메일이 중복되는지 확인합니다.")
+    @GetMapping("/check-email")
+    fun checkEmail(@RequestParam email: String): ResponseEntity<ApiResponse<EmailCheckResponse>> {
+        val isAvailable = authService.checkEmailAvailability(email)
+        return ResponseEntity.ok(ApiResponse.onSuccess(EmailCheckResponse(isAvailable)))
+    }
+
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 토큰 및 역할 정보를 발급받습니다.")
     @PostMapping("/login")
     fun login(
         @Valid @RequestBody loginRequest: LoginRequest,
         response: HttpServletResponse
     ): ResponseEntity<ApiResponse<LoginResponse>> {
-        val (tokenInfo, member) = authService.login(loginRequest)
+        val (tokenInfo, member, roles) = authService.login(loginRequest)
 
         val refreshTokenCookie = cookieUtil.createRefreshTokenCookie(
             tokenInfo.refreshToken,
@@ -49,7 +57,11 @@ class AuthController(
         )
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
 
-        val loginResponse = LoginResponse(accessToken = tokenInfo.accessToken, memberId = member?.id)
+        val loginResponse = LoginResponse(
+            accessToken = tokenInfo.accessToken,
+            memberId = member?.id,
+            roles = roles
+        )
         return ResponseEntity.ok(ApiResponse.onSuccess(loginResponse))
     }
 

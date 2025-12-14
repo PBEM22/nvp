@@ -6,6 +6,7 @@ import org.lcr.nvp.config.security.oauth.CustomOAuth2UserService
 import org.lcr.nvp.config.security.oauth.OAuth2AuthenticationSuccessHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -46,8 +47,32 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) } // 세션 관리 STATELESS 설정
             .authorizeHttpRequests { authorize ->
                 authorize
-                    .requestMatchers("/**", "/api/auth/**", "/error").permitAll() // 특정 경로는 인증 없이 허용
-                    .anyRequest().authenticated() // 나머지 모든 경로는 인증 필요
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Preflight 요청은 항상 허용
+                    .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "MANAGER")
+                    .requestMatchers(
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/error",
+                        "/api/auth/**"
+                    ).permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/v1/members/{memberId:[0-9]+}",
+                        "/api/v1/members/{memberId:[0-9]+}/score-record",
+                        "/api/v1/members/{memberId:[0-9]+}/matches",
+                        "/api/v1/members/{memberId:[0-9]+}/tournaments",
+                        "/api/v1/matches/{matchId:[0-9]+}/details",
+                        "/api/v1/matches/{matchId:[0-9]+}/records",
+                        "/api/v1/tournaments",
+                        "/api/v1/tournaments/{tournamentId:[0-9]+}",
+                        "/api/v1/tournaments/{tournamentId:[0-9]+}/matches",
+                        "/api/v1/opponent-schools",
+                        "/api/v1/opponent-schools/{schoolId:[0-9]+}",
+                        "/api/boards",
+                        "/api/boards/{boardId:[0-9]+}",
+                        "/api/boards/{boardId:[0-9]+}/comments"
+                    ).permitAll()
+                    .anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->
                 oauth2.userInfoEndpoint { userInfo ->

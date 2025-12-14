@@ -13,6 +13,7 @@ import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "경기 관리 API", description = "경기 생성, 조회, 수정 등 관리를 위한 API")
@@ -22,16 +23,18 @@ class MatchController(
     private val matchService: MatchService
 ) {
 
-    @Operation(summary = "경기 생성", description = "새로운 경기를 시스템에 등록합니다.")
+    @Operation(summary = "[운영진] 경기 생성", description = "새로운 경기를 시스템에 등록합니다.")
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun createMatch(@Valid @RequestBody request: MatchCreateRequest): ResponseEntity<ApiResponse<CreatedResponse>> {
         val savedMatch = matchService.createMatch(request)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.onSuccess(CreatedResponse(id = savedMatch.id!!)))
     }
 
-    @Operation(summary = "경기 결과 업데이트", description = "특정 경기의 승패, 최종 세트 스코어, 수상자 정보를 업데이트합니다.")
+    @Operation(summary = "[운영진] 경기 결과 업데이트", description = "특정 경기의 승패, 최종 세트 스코어, 수상자 정보를 업데이트합니다.")
     @PutMapping("/{matchId}/result")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun updateMatchResult(
         @PathVariable matchId: Long,
         @Valid @RequestBody request: MatchResultUpdateRequest

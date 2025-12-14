@@ -1,12 +1,14 @@
 package org.lcr.nvp.domain.member.application
 
-import org.lcr.nvp.domain.member.dto.AssignmentHistoryDto
-import org.lcr.nvp.domain.member.dto.MemberDetailResponse
+import org.lcr.nvp.domain.member.dto.*
 import org.lcr.nvp.domain.member.repository.MemberAssignmentRepository
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
+import org.lcr.nvp.global.exception.domain.InvalidInputValueException
 import org.lcr.nvp.global.exception.domain.MemberNotFoundException
 import org.lcr.nvp.global.exception.domain.UserNotFoundException
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,9 +20,78 @@ class MemberService(
     private val memberAssignmentRepository: MemberAssignmentRepository
 ) {
 
-    fun getMyInfo(userEmail: String): MemberDetailResponse {
-        val user = userRepository.findByEmail(userEmail)
+    fun getMembers(filter: MemberSearchFilter, pageable: Pageable): Page<MemberInfoResponse> {
+        val memberPage = memberRepository.findByCriteria(filter, pageable)
+        val members = memberPage.content
+
+        if (members.isEmpty()) {
+            return Page.empty(pageable)
+        }
+
+        // 한 번의 쿼리로 모든 회원의 활동 이력을 가져옴 (회원ID, 기간순으로 정렬되어 있음)
+        val assignments = memberAssignmentRepository.findAllByMemberInWithDetails(members)
+        // 각 회원 ID별로 활동 이력 목록을 그룹화
+        val assignmentsByMemberId = assignments.groupBy { it.member.id }
+
+        return memberPage.map { member ->
+            // 정렬된 목록에서 첫 번째(가장 최신) 활동 이력을 가져옴
+            val latestAssignment = assignmentsByMemberId[member.id]?.firstOrNull()
+            MemberInfoResponse(
+                memberId = member.id,
+                name = member.user.name,
+                backNumber = member.backNumber,
+                major = member.major,
+                membershipStatus = member.membershipStatus,
+                periodNumber = latestAssignment?.period?.periodNumber,
+                periodYear = latestAssignment?.period?.year,
+                departmentName = latestAssignment?.department?.name,
+                positionName = latestAssignment?.position?.name,
+                displayName = latestAssignment?.displayName
+            )
+        }
+    }
+
+    @Transactional
+    fun updateMyInfo(userEmail: String, request: UpdateMyInfoRequest) {
+        val user = userRepository.findByProviderId(userEmail)
+            ?: userRepository.findByEmail(userEmail)
             ?: throw UserNotFoundException()
+
+        val member = memberRepository.findByUser(user)
+            ?: throw MemberNotFoundException()
+
+        request.name?.let { user.name = it }
+        request.birthday?.let { user.birthday = it }
+        request.gender?.let {
+            user.isMale = when (it) {
+                "남성" -> true
+                "여성" -> false
+                else -> throw InvalidInputValueException()
+            }
+        }
+        request.backNumber?.let { member.backNumber = it }
+        request.major?.let { member.major = it }
+    }
+
+    @Transactional
+    fun withdrawMember(userEmail: String) {
+        val user = userRepository.findByProviderId(userEmail)
+            ?: userRepository.findByEmail(userEmail)
+            ?: throw UserNotFoundException()
+
+        val member = memberRepository.findByUser(user)
+            ?: throw MemberNotFoundException()
+
+        // User와 Member를 soft-delete 처리
+        user.softDelete()
+        member.softDelete()
+        member.membershipStatus = "WITHDRAWN" // 상태를 '탈퇴'로 명확히 변경
+    }
+
+    fun getMyInfo(userEmail: String): MemberDetailResponse {
+        val user = userRepository.findByProviderId(userEmail)
+            ?: userRepository.findByEmail(userEmail)
+            ?: throw NoSuchElementException("ID 또는 이메일이 ${userEmail}인 사용자를 찾을 수 없습니다.")
 
         val member = memberRepository.findByUser(user)
             ?: throw MemberNotFoundException() // 정식 회원이 아닌 경우
@@ -38,6 +109,8 @@ class MemberService(
             )
         }
 
+        val roles = user.roles.map { it.roleName }
+
         return MemberDetailResponse(
             memberId = member.id,
             userId = member.user.id,
@@ -50,6 +123,7 @@ class MemberService(
             major = member.major,
             isPublic = member.isPublic,
             membershipStatus = member.membershipStatus,
+            roles = roles,
             assignments = assignmentHistoryDtos
         )
     }
@@ -71,6 +145,8 @@ class MemberService(
             )
         }
 
+        val roles = member.user.roles.map { it.roleName }
+
         return MemberDetailResponse(
             memberId = member.id,
             userId = member.user.id,
@@ -83,6 +159,7 @@ class MemberService(
             major = member.major,
             isPublic = member.isPublic,
             membershipStatus = member.membershipStatus,
+            roles = roles,
             assignments = assignmentHistoryDtos
         )
     }

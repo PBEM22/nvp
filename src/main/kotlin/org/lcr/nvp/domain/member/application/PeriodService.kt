@@ -5,6 +5,8 @@ import org.lcr.nvp.domain.member.dto.CreatePeriodRequest
 import org.lcr.nvp.domain.member.dto.PeriodResponse
 import org.lcr.nvp.domain.member.dto.UpdatePeriodRequest
 import org.lcr.nvp.domain.member.repository.PeriodRepository
+import org.lcr.nvp.global.exception.BusinessException
+import org.lcr.nvp.global.exception.ErrorCode
 import org.lcr.nvp.global.exception.domain.PeriodNotFoundException
 import org.lcr.nvp.global.exception.domain.PeriodNumberDuplicationException
 import org.springframework.stereotype.Service
@@ -39,6 +41,19 @@ class PeriodService(
                 isCurrent = period.isCurrent
             )
         }
+    }
+
+    @Transactional(readOnly = true)
+    fun getCurrentPeriod(): PeriodResponse {
+        val period = periodRepository.findByIsCurrent(true)
+            ?: throw BusinessException(ErrorCode.CURRENT_PERIOD_NOT_SET)
+        return PeriodResponse(
+            id = period.id,
+            year = period.year,
+            semester = period.semester,
+            periodNumber = period.periodNumber,
+            isCurrent = period.isCurrent
+        )
     }
 
     fun updatePeriod(periodId: Long, request: UpdatePeriodRequest): Period {

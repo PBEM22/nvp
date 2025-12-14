@@ -56,6 +56,8 @@ class MemberAdminService(
             )
         }
 
+        val roles = member.user.roles.map { it.roleName }
+
         return MemberDetailResponse(
             memberId = member.id,
             userId = member.user.id,
@@ -68,6 +70,7 @@ class MemberAdminService(
             major = member.major,
             isPublic = member.isPublic,
             membershipStatus = member.membershipStatus,
+            roles = roles,
             assignments = assignmentHistoryDtos
         )
     }
@@ -302,13 +305,13 @@ class MemberAdminService(
             "# major: 학과 (선택)",
             "# department: 할당할 부서 이름 (필수, 현재 등록된 부서: ${departmentNames})",
             "# position: 할당할 직책 이름 (필수, 현재 등록된 직책: ${positionNames})",
-            "# periodNumber: 할당할 기수 숫자 (필수, 예: 37). 한 학기마다 1씩 올라갑니다.",
+            "# periodNumber: 할당할 기수 숫자 (필수, 예: 13). 한 학기마다 1씩 올라갑니다.",
             "#",
             "# --- [부서/직책 상세 설명] ---",
             "# 회장단: 파트장(회장), 차장(부회장)",
-            "# 훈련부: 파트장(훈련부장), 차장(훈련부원)",
+            "# 훈련부: 파트장(훈련부장), 차장(훈련부)",
             "# 매니저: 파트장(매니저장), 차장(매니저)",
-            "# 총무부: 파트장(총무부장), 차장(총무부원)",
+            "# 총무부: 파트장(총무부장), 차장(총무부)",
             "# 관리부: 파트장(관리부장), 차장(타 부서 소속이 아닌 모든 임원진)",
             "# 일반: 일반(일반 부원), 게스트(동아리 소속이 아닌 회원)"
         )
@@ -338,7 +341,7 @@ class MemberAdminService(
         exampleRow.createCell(3).setCellValue("컴퓨터공학과")
         exampleRow.createCell(4).setCellValue("훈련부")
         exampleRow.createCell(5).setCellValue("일반")
-        exampleRow.createCell(6).setCellValue("37")
+        exampleRow.createCell(6).setCellValue("5")
 
 
         // 컬럼 너비 수동 설정

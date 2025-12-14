@@ -7,5 +7,7 @@ data class LoginResponse(
     @Schema(description = "발급된 Access Token")
     val accessToken: String,
     @Schema(description = "정식 회원인 경우의 memberId. 정식 회원이 아니면 null.", example = "1", nullable = true)
-    val memberId: Long?
+    val memberId: Long?,
+    @Schema(description = "사용자의 역할(Role) 목록", example = "[\"ROLE_USER\", \"ROLE_MANAGER\"]")
+    val roles: List<String>
 )

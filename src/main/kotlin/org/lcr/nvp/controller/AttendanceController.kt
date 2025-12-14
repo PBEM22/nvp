@@ -1,6 +1,7 @@
 package org.lcr.nvp.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.lcr.nvp.domain.attendance.application.AttendanceService
@@ -8,6 +9,7 @@ import org.lcr.nvp.domain.attendance.dto.CheckInRequest
 import org.lcr.nvp.domain.attendance.dto.DailyAttendanceStatusResponse
 import org.lcr.nvp.domain.attendance.dto.GenerateCodeRequest
 import org.lcr.nvp.domain.attendance.dto.GenerateCodeResponse
+import org.lcr.nvp.domain.attendance.dto.TodayAttendanceResponse
 import org.lcr.nvp.global.common.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
@@ -23,17 +25,21 @@ class AttendanceController(
     private val attendanceService: AttendanceService
 ) {
 
-    @Operation(summary = "[운영진] 특정 날짜 출석 현황 조회", description = "특정 날짜의 모든 회원의 출석 상태를 조회합니다.")
+    @Operation(
+        summary = "[운영진] 특정 날짜 출석 현황 조회",
+        description = "특정 날짜의 출석 상태를 조회합니다. periodId 파라미터로 특정 기수를 지정할 수 있으며, 없으면 현재 활동 기수를 기준으로 조회합니다."
+    )
     @GetMapping("/admin/attendance/{date}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun getDailyAttendance(
-        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) date: LocalDate
+        @Parameter(description = "조회할 날짜", example = "2024-05-10") @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) date: LocalDate,
+        @Parameter(description = "조회할 기수의 ID (선택 사항)") @RequestParam(required = false) periodId: Long?
     ): ResponseEntity<ApiResponse<List<DailyAttendanceStatusResponse>>> {
-        val response = attendanceService.getDailyAttendanceStatus(date)
+        val response = attendanceService.getDailyAttendanceStatus(date, periodId)
         return ResponseEntity.ok(ApiResponse.onSuccess(response))
     }
 
-    @Operation(summary = "[운영진] 출석 코드 생성", description = "특정 회차의 출석 코드를 생성하고 10분간 활성화합니다.")
+    @Operation(summary = "[운영진] 출석 코드 생성", description = "특정 회차의 출석 코드를 생성하고 10분간 활성화합니다. 기존 코드가 있으면 덮어씁니다.")
     @PostMapping("/admin/attendance/code")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun generateAttendanceCode(
@@ -70,5 +76,13 @@ class AttendanceController(
     ): ResponseEntity<ApiResponse<Unit>> {
         attendanceService.checkIn(principal.name, request)
         return ResponseEntity.ok(ApiResponse.onSuccess())
+    }
+
+    @Operation(summary = "[회원] 오늘의 내 출석 상태 조회", description = "로그인한 사용자의 오늘 날짜 출석 상태(1차, 2차)를 조회합니다.")
+    @GetMapping("/v1/attendance/today")
+    @PreAuthorize("isAuthenticated()")
+    fun getTodayAttendance(principal: Principal): ResponseEntity<ApiResponse<TodayAttendanceResponse>> {
+        val response = attendanceService.getTodayAttendance(principal.name)
+        return ResponseEntity.ok(ApiResponse.onSuccess(response))
     }
 }

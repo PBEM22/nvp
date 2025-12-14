@@ -9,6 +9,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.NoHandlerFoundException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -23,6 +24,17 @@ class GlobalExceptionHandler {
         log.warn("handleMethodArgumentNotValidException: {}", e.message)
         val errorCode = ErrorCode.INVALID_INPUT_VALUE
         val response = ApiResponse.onFailure(errorCode.code, e.bindingResult.fieldError?.defaultMessage ?: errorCode.message)
+        return ResponseEntity.status(errorCode.status).body(response)
+    }
+
+    /**
+     * 잘못된 URL 요청 시 발생하는 예외를 처리합니다. (404 Not Found)
+     */
+    @ExceptionHandler(NoHandlerFoundException::class)
+    protected fun handleNoHandlerFound(e: NoHandlerFoundException): ResponseEntity<ApiResponse<Unit>> {
+        log.warn("handleNoHandlerFoundException: {}", e.message)
+        val errorCode = ErrorCode.URL_NOT_FOUND
+        val response = ApiResponse.onFailure(errorCode.code, errorCode.message)
         return ResponseEntity.status(errorCode.status).body(response)
     }
 

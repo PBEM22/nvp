@@ -29,4 +29,8 @@ abstract class BaseTimeEntity {
     fun softDelete() {
         this.deletedAt = LocalDateTime.now()
     }
+
+    fun unDelete() {
+        this.deletedAt = null
+    }
 }
