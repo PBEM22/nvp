@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-focal AS build
+FROM gradle:9.2.1-jdk21 AS build
 WORKDIR /home/gradle/project
 
 COPY build.gradle settings.gradle ./
@@ -10,7 +10,7 @@ COPY src ./src
 
 RUN ./gradlew bootJar --no-daemon
 
-FROM eclipse-temurin:21-jre-focal
+FROM eclipse-temurin:21
 WORKDIR /app
 
 COPY --from=build /home/gradle/project/build/libs/*.jar app.jar
