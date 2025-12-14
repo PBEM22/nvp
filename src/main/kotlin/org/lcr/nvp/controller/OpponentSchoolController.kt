@@ -10,6 +10,7 @@ import org.lcr.nvp.global.common.ApiResponse
 import org.lcr.nvp.global.common.dto.CreatedResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "상대 학교 관리 API", description = "상대 학교 생성, 조회, 수정 등 관리를 위한 API")
@@ -19,8 +20,9 @@ class OpponentSchoolController(
     private val opponentSchoolService: OpponentSchoolService
 ) {
 
-    @Operation(summary = "상대 학교 생성")
+    @Operation(summary = "[운영진] 상대 학교 생성")
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun createOpponentSchool(@Valid @RequestBody request: OpponentSchoolCreateRequest): ResponseEntity<ApiResponse<CreatedResponse>> {
         val savedSchool = opponentSchoolService.createOpponentSchool(request)
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -41,8 +43,9 @@ class OpponentSchoolController(
         return ResponseEntity.ok(ApiResponse.onSuccess(OpponentSchoolResponse.from(school)))
     }
 
-    @Operation(summary = "상대 학교 정보 수정")
+    @Operation(summary = "[운영진] 상대 학교 정보 수정")
     @PutMapping("/{schoolId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun updateOpponentSchool(
         @PathVariable schoolId: Long,
         @Valid @RequestBody request: OpponentSchoolCreateRequest
@@ -51,8 +54,9 @@ class OpponentSchoolController(
         return ResponseEntity.ok(ApiResponse.onSuccess(OpponentSchoolResponse.from(updatedSchool)))
     }
 
-    @Operation(summary = "상대 학교 삭제")
+    @Operation(summary = "[운영진] 상대 학교 삭제")
     @DeleteMapping("/{schoolId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     fun deleteOpponentSchool(@PathVariable schoolId: Long): ResponseEntity<ApiResponse<Unit>> {
         opponentSchoolService.deleteOpponentSchool(schoolId)
         return ResponseEntity.ok(ApiResponse.onSuccess())

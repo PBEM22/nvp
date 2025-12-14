@@ -41,6 +41,8 @@ data class MemberDetailResponse(
     val isPublic: Boolean,
     @Schema(description = "회원 상태 (e.g., ACTIVE_MEMBER, ALUMNI)", example = "ACTIVE_MEMBER")
     val membershipStatus: String,
+    @Schema(description = "사용자의 역할(Role) 목록", example = "[\"ROLE_USER\", \"ROLE_MANAGER\"]")
+    val roles: List<String>,
     @Schema(description = "역대 활동 이력 목록")
     val assignments: List<AssignmentHistoryDto>
 )

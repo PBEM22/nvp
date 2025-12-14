@@ -1,6 +1,7 @@
 package org.lcr.nvp.config.security.oauth
 
 import org.lcr.nvp.domain.member.domain.User
+import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.RoleRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
 import org.lcr.nvp.global.exception.domain.RoleNotFoundException
@@ -14,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class CustomOAuth2UserService(
     private val userRepository: UserRepository,
-    private val roleRepository: RoleRepository
+    private val roleRepository: RoleRepository,
+    private val memberRepository: MemberRepository
 ) : DefaultOAuth2UserService() {
 
     @Transactional
@@ -36,29 +38,42 @@ class CustomOAuth2UserService(
     }
 
     private fun saveOrUpdate(attributes: OAuth2Attributes): User {
-        val user = userRepository.findByEmail(attributes.email)
-            ?.apply {
-                // 기존 사용자인 경우, 이름이 바뀌었으면 업데이트
-                if (this.name != attributes.name) {
-                    this.name = attributes.name
+        val existingUser = userRepository.findByEmail(attributes.email)
+
+        if (existingUser != null) {
+            // 이메일이 존재하지만, 탈퇴한 회원인 경우 (계정 부활)
+            if (existingUser.deletedAt != null) {
+                existingUser.unDelete()
+                // 소셜 로그인이므로 이름만 provider의 정보로 업데이트 (선택적)
+                if (existingUser.name != attributes.name) {
+                    existingUser.name = attributes.name
                 }
-            }
-            ?: run {
-                // 신규 사용자인 경우, 자동으로 생성
-                val defaultRole = roleRepository.findByRoleName("ROLE_USER") ?: throw RoleNotFoundException()
-                User(
-                    email = attributes.email,
-                    name = attributes.name,
-                    password = null, // 소셜 로그인은 비밀번호 없음
-                    birthday = null, // 추가 정보는 null로 시작
-                    isMale = null, // 추가 정보는 null로 시작
-                    providerId = attributes.providerId,
-                    loginType = attributes.registrationId.uppercase()
-                ).apply {
-                    this.roles.add(defaultRole)
+
+                // 연관된 Member도 부활시킴
+                memberRepository.findByUser(existingUser)?.apply {
+                    this.unDelete()
+                    this.membershipStatus = "ACTIVE_MEMBER"
                 }
+                return userRepository.save(existingUser)
             }
-        return userRepository.save(user)
+            // 활성 상태인 기존 회원이면 그냥 반환
+            return existingUser
+        }
+
+        // 신규 사용자인 경우 provider의 정보로 생성
+        val defaultRole = roleRepository.findByRoleName("ROLE_USER") ?: throw RoleNotFoundException()
+        val newUser = User(
+            email = attributes.email,
+            name = attributes.name,
+            password = null, // 소셜 로그인은 비밀번호 없음
+            birthday = null, // 추가 정보는 null로 시작
+            isMale = null, // 추가 정보는 null로 시작
+            providerId = attributes.providerId,
+            loginType = attributes.registrationId.uppercase()
+        ).apply {
+            this.roles.add(defaultRole)
+        }
+        return userRepository.save(newUser)
     }
 }
 

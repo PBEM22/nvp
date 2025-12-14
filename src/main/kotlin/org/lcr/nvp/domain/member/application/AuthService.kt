@@ -7,6 +7,8 @@ import org.lcr.nvp.domain.member.dto.*
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.RoleRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
+import org.lcr.nvp.global.exception.BusinessException
+import org.lcr.nvp.global.exception.ErrorCode
 import org.lcr.nvp.global.exception.domain.*
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
@@ -33,12 +35,7 @@ class AuthService(
 
     @Transactional
     fun signup(signupRequest: SignupRequest): User {
-        if (userRepository.findByEmail(signupRequest.email) != null) {
-            throw EmailDuplicationException()
-        }
-
-        val defaultRole = roleRepository.findByRoleName("ROLE_USER")
-            ?: throw RoleNotFoundException()
+        val existingUser = userRepository.findByEmail(signupRequest.email)
 
         val isMale = when (signupRequest.gender) {
             "남성" -> true
@@ -46,7 +43,33 @@ class AuthService(
             else -> throw InvalidInputValueException()
         }
 
-        // User 생성
+        if (existingUser != null) {
+            // 이메일이 존재하지만, 탈퇴한 회원인 경우 (계정 부활)
+            if (existingUser.deletedAt != null) {
+                existingUser.apply {
+                    this.password = passwordEncoder.encode(signupRequest.password)
+                    this.name = signupRequest.name
+                    this.birthday = signupRequest.birthday
+                    this.isMale = isMale
+                    this.unDelete() // soft-delete 해제
+                }
+
+                // 연관된 Member도 부활시킴
+                memberRepository.findByUser(existingUser)?.apply {
+                    this.unDelete()
+                    this.membershipStatus = "ACTIVE_MEMBER"
+                }
+                return userRepository.save(existingUser)
+            } else {
+                // 활성 상태인 회원이 이미 존재
+                throw EmailDuplicationException()
+            }
+        }
+
+        // 신규 회원가입
+        val defaultRole = roleRepository.findByRoleName("ROLE_USER")
+            ?: throw RoleNotFoundException()
+
         val user = User(
             email = signupRequest.email,
             password = passwordEncoder.encode(signupRequest.password),
@@ -61,8 +84,13 @@ class AuthService(
         return userRepository.save(user)
     }
 
+    @Transactional(readOnly = true)
+    fun checkEmailAvailability(email: String): Boolean {
+        return userRepository.findByEmailAndDeletedAtIsNull(email) == null
+    }
+
     @Transactional
-    fun login(loginRequest: LoginRequest): Pair<TokenInfo, Member?> {
+    fun login(loginRequest: LoginRequest): Triple<TokenInfo, Member?, List<String>> {
         val authentication: Authentication
         try {
             authentication = authenticationManager.authenticate(
@@ -77,7 +105,13 @@ class AuthService(
         val user = userRepository.findByEmail(loginRequest.email)
             ?: throw UserNotFoundException()
 
+        // 탈퇴한 회원인지 확인
+        if (user.deletedAt != null) {
+            throw BusinessException(ErrorCode.ACCOUNT_DEACTIVATED)
+        }
+
         val member = memberRepository.findByUser(user)
+        val roles = user.roles.map { it.roleName }
 
         // 토큰 생성
         val accessToken = jwtTokenProvider.generateAccessToken(authentication)
@@ -92,7 +126,7 @@ class AuthService(
         )
 
         val tokenInfo = TokenInfo(accessToken = accessToken, refreshToken = refreshToken)
-        return Pair(tokenInfo, member)
+        return Triple(tokenInfo, member, roles)
     }
 
     @Transactional

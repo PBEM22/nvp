@@ -36,8 +36,8 @@ class MatchService(
     @Transactional
     fun createMatch(request: MatchCreateRequest): Match {
         val tournament = tournamentRepository.findById(request.tournamentId)
-            .orElseThrow { NoSuchElementException("ID가 ${request.tournamentId}인 대회를 찾을 수 없습니다.") }
-        
+            .orElseThrow { BusinessException(ErrorCode.TOURNAMENT_NOT_FOUND) }
+
         val opponentSchool = opponentSchoolRepository.findById(request.opponentSchoolId)
             .orElseThrow { NoSuchElementException("ID가 ${request.opponentSchoolId}인 상대 학교를 찾을 수 없습니다.") }
 
@@ -67,33 +67,37 @@ class MatchService(
 
         // --- 수상자 정보 업데이트 ---
         val allRecordsInMatch = matchRecordRepository.findByMatch(match)
-        val recordsByMemberId = allRecordsInMatch.groupBy { it.member.id!! }
+        val recordsByMember = allRecordsInMatch.groupBy { it.member }
+
+        // ID가 제공되지 않은 경우, 자동 선정 로직 실행
+        val mvpMemberId = request.mvpMemberId ?: calculateAutoMvp(recordsByMember)
+        val spikerMemberId = request.spikerMemberId ?: calculateAutoSpiker(recordsByMember)
+        val defenderMemberId = request.defenderMemberId ?: calculateAutoDefender(recordsByMember)
 
         // MVP
-        request.mvpMemberId?.let {
+        mvpMemberId?.let {
             match.mvpMemberId = it
-            match.mvpReason = "경기 MVP"
+            match.mvpReason = if (request.mvpMemberId == null) "자동 선정 (총 득점 + 디그)" else "경기 MVP"
         }
 
         // 공격왕
-        request.spikerMemberId?.let {
-            val records = recordsByMemberId[it] ?: emptyList()
-            val totalAttackAttempt = records.sumOf { r: MatchRecord -> r.attackAttempt }
+        spikerMemberId?.let {
+            val records = recordsByMember.values.flatten().filter { r -> r.member.id == it }
+            val totalAttackAttempt = records.sumOf(MatchRecord::attackAttempt)
             val efficiency = calculateEfficiency(
-                records.sumOf { r: MatchRecord -> r.attackSuccess } - records.sumOf { r: MatchRecord -> r.attackError } - records.sumOf { r: MatchRecord -> r.attackBlock },
+                records.sumOf(MatchRecord::attackSuccess) - records.sumOf(MatchRecord::attackError) - records.sumOf(MatchRecord::attackBlock),
                 totalAttackAttempt
             )
             match.spikerMemberId = it
-            match.spikerReason = "공격 효율 ${efficiency}%"
+            match.spikerReason = if (request.spikerMemberId == null) "자동 선정 (공격 효율 ${efficiency}%)" else "공격 효율 ${efficiency}%"
         }
 
         // 수비왕
-        request.defenderMemberId?.let {
-            val records = recordsByMemberId[it] ?: emptyList()
-            val totalBlocks = records.sumOf { r: MatchRecord -> r.blockSuccess }
-            val totalDigs = records.sumOf { r: MatchRecord -> r.digSuccess }
+        defenderMemberId?.let {
+            val records = recordsByMember.values.flatten().filter { r -> r.member.id == it }
+            val totalDigs = records.sumOf(MatchRecord::digSuccess)
             match.defenderMemberId = it
-            match.defenderReason = "블로킹 ${totalBlocks} + 디그 ${totalDigs}"
+            match.defenderReason = if (request.defenderMemberId == null) "자동 선정 (총 디그 ${totalDigs})" else "총 디그 ${totalDigs}"
         }
 
         val savedMatch = matchRepository.save(match)
@@ -103,6 +107,55 @@ class MatchService(
         val awardMembers = memberRepository.findAllById(awardMemberIds).associateBy { it.id!! }
 
         return MatchResponse.from(savedMatch, awardMembers)
+    }
+
+    private fun calculateAutoMvp(recordsByMember: Map<org.lcr.nvp.domain.member.domain.Member, List<MatchRecord>>): Long? {
+        if (recordsByMember.isEmpty()) return null
+
+        return recordsByMember.maxByOrNull { (_, records) ->
+            val totalScore = records.sumOf(MatchRecord::score)
+            val totalDigs = records.sumOf(MatchRecord::digSuccess)
+            totalScore + totalDigs
+        }?.key?.id
+    }
+
+    private fun calculateAutoSpiker(recordsByMember: Map<org.lcr.nvp.domain.member.domain.Member, List<MatchRecord>>): Long? {
+        if (recordsByMember.isEmpty()) return null
+
+        // 1. 팀 평균 공격 득점 계산
+        val playersWithAttackAttempt = recordsByMember.filter { (_, records) -> records.sumOf(MatchRecord::attackAttempt) > 0 }
+        if (playersWithAttackAttempt.isEmpty()) return null
+
+        val totalTeamAttackSuccess = playersWithAttackAttempt.values.flatten().sumOf(MatchRecord::attackSuccess)
+        val teamAverageAttackSuccess = totalTeamAttackSuccess.toDouble() / playersWithAttackAttempt.size
+
+        // 2. 1차 후보 선정: 팀 평균 공격 득점 이상인 선수
+        val primaryCandidates = playersWithAttackAttempt.filter { (_, records) ->
+            records.sumOf(MatchRecord::attackSuccess) >= teamAverageAttackSuccess
+        }
+
+        // 3. 2차 후보 선정: 공격 득점 상위 3명
+        val finalCandidates = primaryCandidates.entries
+            .sortedByDescending { (_, records) -> records.sumOf(MatchRecord::attackSuccess) }
+            .take(3)
+
+        if (finalCandidates.isEmpty()) return null
+
+        // 4. 최종 결정: 3명 중 공격 효율이 가장 높은 선수
+        return finalCandidates.maxByOrNull { (_, records) ->
+            calculateEfficiency(
+                numerator = records.sumOf(MatchRecord::attackSuccess) - records.sumOf(MatchRecord::attackError) - records.sumOf(MatchRecord::attackBlock),
+                denominator = records.sumOf(MatchRecord::attackAttempt)
+            )
+        }?.key?.id
+    }
+
+    private fun calculateAutoDefender(recordsByMember: Map<org.lcr.nvp.domain.member.domain.Member, List<MatchRecord>>): Long? {
+        if (recordsByMember.isEmpty()) return null
+
+        return recordsByMember.maxByOrNull { (_, records) ->
+            records.sumOf(MatchRecord::digSuccess)
+        }?.key?.id
     }
 
     @Transactional(readOnly = true)
@@ -146,14 +199,20 @@ class MatchService(
 
     @Transactional(readOnly = true)
     fun getMatchesByMember(memberId: Long): List<MemberMatchResponse> {
-        val member = memberRepository.findById(memberId)
-            .orElseThrow { BusinessException(ErrorCode.MEMBER_NOT_FOUND) }
+        // memberId 존재 여부 확인
+        if (!memberRepository.existsById(memberId)) {
+            throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+        }
+        val matches = matchRepository.findDistinctMatchesByMemberIdWithDetails(memberId)
+        return matches.map { MemberMatchResponse.from(it) }
+    }
 
-        val matches = matchRecordRepository.findByMember(member)
-            .map { it.match }
-            .distinct()
-            .sortedByDescending { it.matchDate }
-
+    @Transactional(readOnly = true)
+    fun getMatchesByTournament(tournamentId: Long): List<MemberMatchResponse> {
+        if (!tournamentRepository.existsById(tournamentId)) {
+            throw BusinessException(ErrorCode.TOURNAMENT_NOT_FOUND)
+        }
+        val matches = matchRepository.findMatchesByTournamentIdWithDetails(tournamentId)
         return matches.map { MemberMatchResponse.from(it) }
     }
 

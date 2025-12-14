@@ -10,6 +10,8 @@ import org.lcr.nvp.domain.member.repository.MemberAssignmentRepository
 import org.lcr.nvp.domain.member.repository.MemberRepository
 import org.lcr.nvp.domain.member.repository.PeriodRepository
 import org.lcr.nvp.domain.member.repository.UserRepository
+import org.lcr.nvp.global.exception.BusinessException
+import org.lcr.nvp.global.exception.ErrorCode
 import org.lcr.nvp.global.exception.domain.*
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
@@ -38,13 +40,11 @@ class AttendanceService(
 
     /**
      * 운영진이 출석 코드를 생성합니다.
+     * 기존에 유효한 코드가 있다면 덮어씁니다.
      */
     fun generateAttendanceCode(round: Int): GenerateCodeResponse {
         if (round !in 1..2) {
             throw InvalidInputValueException()
-        }
-        if (redisTemplate.hasKey(ATTENDANCE_CODE_KEY)) {
-            throw AttendanceCodeAlreadyExistsException()
         }
 
         // 오늘 날짜의 ExerciseDate를 찾거나 생성합니다.
@@ -55,7 +55,7 @@ class AttendanceService(
         // 6자리 숫자 코드 생성
         val code = String.format("%06d", Random.nextInt(1_000_000))
 
-        // Redis에 코드 정보 저장
+        // Redis에 코드 정보 저장 (기존 코드가 있으면 덮어씀)
         val hashOps = redisTemplate.opsForHash<String, String>()
         val codeData = mapOf(
             "code" to code,
@@ -82,7 +82,8 @@ class AttendanceService(
         val round = codeData["round"]!!.toInt()
         val exerciseDateId = codeData["exerciseDateId"]!!.toLong()
 
-        val user = userRepository.findByEmail(userEmail)
+        val user = userRepository.findByProviderId(userEmail)
+            ?: userRepository.findByEmail(userEmail)
             ?: throw UserNotFoundException()
         val member = memberRepository.findByUser(user)
             ?: throw MemberNotFoundException()
@@ -142,19 +143,23 @@ class AttendanceService(
     }
 
     /**
-     * 특정 날짜의 현재 활동 기수 회원들의 출석 현황을 조회합니다.
+     * 특정 날짜의 특정 기수 회원들의 출석 현황을 조회합니다.
+     * periodId가 null이면 현재 활동 기수를 기준으로 조회합니다.
      */
     @Transactional(readOnly = true)
-    fun getDailyAttendanceStatus(date: LocalDate): List<org.lcr.nvp.domain.attendance.dto.DailyAttendanceStatusResponse> {
+    fun getDailyAttendanceStatus(date: LocalDate, periodId: Long?): List<org.lcr.nvp.domain.attendance.dto.DailyAttendanceStatusResponse> {
         // 1. 해당 날짜의 운동일 정보 조회
         val exerciseDate = exerciseDateRepository.findByDate(date) ?: return emptyList()
 
-        // 2. 현재 활동 기수(Period) 정보 조회
-        val currentPeriod = periodRepository.findByIsCurrent(true)
-            ?: throw PeriodNotFoundException() // 현재 활동 기수가 설정되지 않았으면 에러
+        // 2. 조회할 기수(Period) 정보 결정
+        val targetPeriod = if (periodId != null) {
+            periodRepository.findById(periodId).orElseThrow { PeriodNotFoundException() }
+        } else {
+            periodRepository.findByIsCurrent(true) ?: throw BusinessException(ErrorCode.CURRENT_PERIOD_NOT_SET)
+        }
 
-        // 3. 현재 활동 기수에 속한 모든 회원 조회
-        val currentMembers = memberAssignmentRepository.findAllByPeriodWithMember(currentPeriod)
+        // 3. 해당 기수에 속한 모든 회원 조회
+        val membersInPeriod = memberAssignmentRepository.findAllByPeriodWithMember(targetPeriod)
             .map { it.member }
             .distinctBy { it.id } // 중복 회원 제거 (한 기수에 여러 직책을 가질 수 있으므로)
 
@@ -162,8 +167,8 @@ class AttendanceService(
         val attendanceMap = attendanceRepository.findAllByExerciseDateWithMember(exerciseDate)
             .associateBy { it.member.id }
 
-        // 5. 현재 활동 기수 회원들을 기준으로 최종 응답 DTO 리스트 생성
-        return currentMembers.map { member ->
+        // 5. 해당 기수 회원들을 기준으로 최종 응답 DTO 리스트 생성
+        return membersInPeriod.map { member ->
             val attendance = attendanceMap[member.id]
             if (attendance != null) {
                 // 출석 기록이 있는 경우
@@ -192,7 +197,8 @@ class AttendanceService(
      */
     @Transactional(readOnly = true)
     fun getMyAttendance(userEmail: String): org.lcr.nvp.domain.attendance.dto.GroupedMyAttendanceResponse {
-        val user = userRepository.findByEmail(userEmail)
+        val user = userRepository.findByProviderId(userEmail)
+            ?: userRepository.findByEmail(userEmail)
             ?: throw UserNotFoundException()
         val member = memberRepository.findByUser(user)
             ?: throw MemberNotFoundException()
@@ -314,6 +320,36 @@ class AttendanceService(
                 round1Status = attendance.round1Status.name,
                 round2Status = attendance.round2Status.name,
                 finalStatus = attendance.getFinalStatus()
+            )
+        }
+    }
+
+    @Transactional(readOnly = true)
+    fun getTodayAttendance(userEmail: String): TodayAttendanceResponse {
+        val user = userRepository.findByProviderId(userEmail)
+            ?: userRepository.findByEmail(userEmail)
+            ?: throw UserNotFoundException()
+        val member = memberRepository.findByUser(user)
+            ?: throw MemberNotFoundException()
+
+        val today = LocalDate.now()
+        val exerciseDate = exerciseDateRepository.findByDate(today)
+
+        val attendance = exerciseDate?.let {
+            attendanceRepository.findByMemberAndExerciseDate(member, it)
+        }
+
+        return if (attendance != null) {
+            TodayAttendanceResponse(
+                date = today,
+                round1Status = attendance.round1Status.name,
+                round2Status = attendance.round2Status.name
+            )
+        } else {
+            TodayAttendanceResponse(
+                date = today,
+                round1Status = AttendanceStatus.ABSENT.name,
+                round2Status = AttendanceStatus.ABSENT.name
             )
         }
     }
