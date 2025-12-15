@@ -91,13 +91,32 @@ class MemberService(
     fun getMyInfo(userEmail: String): MemberDetailResponse {
         val user = userRepository.findByProviderId(userEmail)
             ?: userRepository.findByEmail(userEmail)
-            ?: throw NoSuchElementException("ID 또는 이메일이 ${userEmail}인 사용자를 찾을 수 없습니다.")
+            ?: throw UserNotFoundException()
 
         val member = memberRepository.findByUser(user)
-            ?: throw MemberNotFoundException() // 정식 회원이 아닌 경우
+        val roles = user.roles.map { it.roleName }
 
+        // 정식 회원이 아닌 경우, User 정보만으로 응답 생성
+        if (member == null) {
+            return MemberDetailResponse(
+                memberId = null,
+                userId = user.id,
+                email = user.email,
+                name = user.name,
+                birthday = user.birthday,
+                isMale = user.isMale,
+                profileImageUrl = null,
+                backNumber = null,
+                major = null,
+                isPublic = false,
+                membershipStatus = "NON_MEMBER",
+                roles = roles,
+                assignments = emptyList()
+            )
+        }
+
+        // 정식 회원인 경우, 모든 정보 포함하여 응답 생성
         val assignments = memberAssignmentRepository.findAllByMemberWithDetails(member)
-
         val assignmentHistoryDtos = assignments.map { assignment ->
             AssignmentHistoryDto(
                 departmentName = assignment.department.name,
@@ -109,15 +128,13 @@ class MemberService(
             )
         }
 
-        val roles = user.roles.map { it.roleName }
-
         return MemberDetailResponse(
             memberId = member.id,
-            userId = member.user.id,
-            email = member.user.email,
-            name = member.user.name,
-            birthday = member.user.birthday,
-            isMale = member.user.isMale,
+            userId = user.id,
+            email = user.email,
+            name = user.name,
+            birthday = user.birthday,
+            isMale = user.isMale,
             profileImageUrl = member.profileImageUrl,
             backNumber = member.backNumber,
             major = member.major,
