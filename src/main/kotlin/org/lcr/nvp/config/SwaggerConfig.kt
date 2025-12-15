@@ -27,7 +27,7 @@ class SwaggerConfig {
             .info(apiInfo())
             .servers(listOf(
                 Server().url("http://localhost:8080").description("Local"),
-                Server().url("https://nvp.kr").description("Production"),
+                Server().url("https://dev.nvp.kr").description("Production"),
             ))
             .addSecurityItem(securityRequirement)
             .components(components)
