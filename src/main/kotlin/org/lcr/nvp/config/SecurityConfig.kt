@@ -50,12 +50,16 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Preflight 요청은 항상 허용
                     .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "MANAGER")
                     .requestMatchers(
+                        // Swagger, Error, Auth, OAuth2 Callback 등 인증 없이 접근해야 하는 경로
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/error",
-                        "/api/auth/**"
+                        "/api/v1/auth/**",
+                        "/login/oauth2/code/**" // 소셜 로그인 콜백 경로 허용
                     ).permitAll()
                     .requestMatchers(
+                        // 아래 GET 요청들은 비회원도 조회 가능
+                        "/api/v1/members",
                         "/api/v1/members/{memberId:[0-9]+}",
                         "/api/v1/members/{memberId:[0-9]+}/score-record",
                         "/api/v1/members/{memberId:[0-9]+}/matches",
@@ -67,12 +71,12 @@ class SecurityConfig(
                         "/api/v1/tournaments/{tournamentId:[0-9]+}/matches",
                         "/api/v1/opponent-schools",
                         "/api/v1/opponent-schools/{schoolId:[0-9]+}",
-                        "/api/boards",
-                        "/api/boards/{boardId:[0-9]+}",
-                        "/api/boards/{boardId:[0-9]+}/comments",
-                        "/api/v1/**",
-                        "/api/v1/auth/**"
+                        "/api/v1/periods",
+                        "/api/v1/periods/current",
+                        "/api/v1/**"
+                        // 게시판/댓글 기능 제외됨
                     ).permitAll()
+                    // 그 외 모든 요청은 인증 필요
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->

@@ -19,8 +19,8 @@ data class MemberSummaryResponse(
 
 @Schema(description = "회원 상세 정보 응답 DTO")
 data class MemberDetailResponse(
-    @Schema(description = "회원 고유 ID", example = "1")
-    val memberId: Long,
+    @Schema(description = "회원 고유 ID. 정식 회원이 아니면 null.", example = "1", nullable = true)
+    val memberId: Long?,
     @Schema(description = "사용자 고유 ID", example = "1")
     val userId: Long,
     @Schema(description = "이메일", example = "test@example.com")
@@ -37,10 +37,10 @@ data class MemberDetailResponse(
     val backNumber: Int?,
     @Schema(description = "학과", example = "컴퓨터공학과", nullable = true)
     val major: String?,
-    @Schema(description = "연혁 공개 여부", example = "true")
+    @Schema(description = "연혁 공개 여부. 정식 회원이 아니면 false.", example = "true")
     val isPublic: Boolean,
-    @Schema(description = "회원 상태 (e.g., ACTIVE_MEMBER, ALUMNI)", example = "ACTIVE_MEMBER")
-    val membershipStatus: String,
+    @Schema(description = "회원 자격 상태 (e.g., ACTIVE_MEMBER, ALUMNI). 정식 회원이 아니면 null.", example = "ACTIVE_MEMBER", nullable = true)
+    val membershipStatus: String?,
     @Schema(description = "사용자의 역할(Role) 목록", example = "[\"ROLE_USER\", \"ROLE_MANAGER\"]")
     val roles: List<String>,
     @Schema(description = "역대 활동 이력 목록")
