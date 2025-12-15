@@ -25,7 +25,10 @@ class SwaggerConfig {
 
         return OpenAPI()
             .info(apiInfo())
-            .servers(listOf(Server().url("http://localhost:8080").description("Local")))
+            .servers(listOf(
+                Server().url("http://localhost:8080").description("Local"),
+                Server().url("https://nvp.kr").description("Production"),
+            ))
             .addSecurityItem(securityRequirement)
             .components(components)
     }
