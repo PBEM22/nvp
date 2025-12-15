@@ -18,5 +18,8 @@ data class UpdateMyInfoRequest(
     val backNumber: Int?,
 
     @Schema(description = "새로운 학과", example = "컴퓨터공학과", required = false)
-    val major: String?
+    val major: String?,
+
+    @Schema(description = "연혁 공개 여부", example = "true", required = false)
+    val isPublic: Boolean?
 )

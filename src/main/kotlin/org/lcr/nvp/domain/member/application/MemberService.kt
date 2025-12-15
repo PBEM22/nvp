@@ -71,6 +71,7 @@ class MemberService(
         }
         request.backNumber?.let { member.backNumber = it }
         request.major?.let { member.major = it }
+        request.isPublic?.let { member.isPublic = it }
     }
 
     @Transactional
