@@ -8,6 +8,8 @@ data class MemberInfoResponse(
     val memberId: Long,
     @Schema(description = "이름", example = "김엔비")
     val name: String?,
+    @Schema(description = "이메일", example = "test@example.com")
+    val email: String,
     @Schema(description = "등번호", example = "10", nullable = true)
     val backNumber: Int?,
     @Schema(description = "학과", example = "컴퓨터공학과", nullable = true)

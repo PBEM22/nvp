@@ -46,6 +46,7 @@ class MemberAdminService(
             MemberInfoResponse(
                 memberId = member.id,
                 name = member.user.name,
+                email = member.user.email,
                 backNumber = member.backNumber,
                 major = member.major,
                 membershipStatus = member.membershipStatus,
